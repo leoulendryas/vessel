@@ -48,19 +48,19 @@ function setupAuthListeners() {
     const len = e.target.value.length;
     if (len === 0) {
       emoji.innerText = '🤔';
-      msg.innerText = 'Speak, friend, and enter.';
+      msg.innerText = 'Just type something. Or don\'t. I\'m a sign, not a cop.';
     } else if (len < 4) {
       emoji.innerText = '🤨';
-      msg.innerText = 'Is that even a word? 🧐';
+      msg.innerText = 'Yeah, that\'s probably enough effort.';
     } else if (len < 8) {
       emoji.innerText = '😊';
-      msg.innerText = 'Getting warmer... 🔥';
+      msg.innerText = 'Wow, you\'re really overthinking this.';
     } else if (len < 12) {
       emoji.innerText = '😎';
-      msg.innerText = 'Now that\'s a vessel! 🚢';
+      msg.innerText = 'Okay, Mr. Cybersecurity. We get it.';
     } else {
       emoji.innerText = '🤯';
-      msg.innerText = 'Basically a fortress. 🏰';
+      msg.innerText = 'Bro, it\'s just a gym app. Relax. 😂';
     }
   });
 
