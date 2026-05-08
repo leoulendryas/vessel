@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vessel — Workout</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="nav-logo">vessel</a>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link active">Workout</a>
+      <a href="stats.html" class="nav-link">Stats</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="day-tabs" id="day-tabs"></div>
+    
+    <div class="panel" id="panel">
+      <!-- Content rendered by app.js -->
+    </div>
+
+    <div class="rest-row">
+      <div class="rest-day">
+        <div class="tab-label">Sat</div>
+        <div class="tab-name">Rest</div>
+      </div>
+      <div class="rest-day">
+        <div class="tab-label">Sun</div>
+        <div class="tab-name">Rest</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Scripts at bottom -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

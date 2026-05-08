@@ -1,0 +1,665 @@
+# vessel — Full Build Specification
+> Hand this entire document to your AI coding agent. It contains everything needed to build the app from scratch.
+
+---
+
+## 1. PROJECT OVERVIEW
+
+Build a personal gym tracker web app called **vessel**. It is a multi-page static HTML/CSS/JS site (no framework, no build tools) with Supabase as the backend database. The user is the only user — no auth needed. The app has two pages: a **Workout page** and a **Stats page**.
+
+---
+
+## 2. FILE STRUCTURE
+
+```
+vessel/
+├── index.html       ← Workout page
+├── stats.html       ← Stats & progress page
+├── style.css        ← All styles (shared across both pages)
+├── data.js          ← Workout program data (exercises, sets, reps etc.)
+├── config.js        ← Supabase credentials (user fills this in)
+├── app.js           ← All logic for index.html
+├── stats.js         ← All logic for stats.html
+└── README.md        ← Setup instructions + SQL to run
+```
+
+No npm, no bundler, no framework. Pure HTML + CSS + vanilla JS. Runs by opening index.html in a browser or deploying to any static host.
+
+---
+
+## 3. DESIGN SYSTEM
+
+### 3.1 Color Palette (CSS variables in `:root`)
+```css
+--bg: #0C0C0C              /* page background — near black */
+--surface: #161616         /* cards, panels */
+--surface2: #202020        /* elevated elements, inputs, inner cards */
+--border: rgba(255,255,255,0.07)   /* subtle dividers */
+--border2: rgba(255,255,255,0.12)  /* slightly stronger borders */
+--text: #EFEFEF            /* primary text */
+--text2: #7A7A7A           /* secondary/muted text */
+--text3: #444444           /* very muted — labels, placeholders */
+--accent: #CCFF00          /* electric lime — all highlights, CTAs */
+--accent-dim: rgba(204,255,0,0.07) /* accent background tint */
+--accent-border: rgba(204,255,0,0.25)
+--accent-text: #0C0C0C     /* text ON accent buttons (dark) */
+--danger: #FF5555          /* errors, negative weight changes */
+--radius: 14px             /* default border radius */
+--radius-sm: 9px           /* small elements */
+--nav-h: 58px              /* navbar height */
+```
+
+### 3.2 Typography
+- Import from Google Fonts: `Syne` (weights 700, 800) and `DM Sans` (weights 300, 400, 500)
+- **Headings / logo / big numbers**: `font-family: 'Syne', sans-serif` — bold, tight letter-spacing (`letter-spacing: -0.02em`)
+- **Everything else**: `font-family: 'DM Sans', sans-serif`
+- Base font size: `15px`
+- `-webkit-font-smoothing: antialiased` on body
+
+### 3.3 General Rules
+- Dark background everywhere. No white surfaces.
+- Borders are always subtle (use `--border` or `--border2`)
+- Only one accent color: `--accent` (#CCFF00). Use it sparingly — active states, CTAs, highlights, positive changes.
+- Hover states: slightly lighten the surface or change border to `--border2`
+- All interactive elements have `cursor: pointer` and a `transition: all 0.15s`
+- `box-sizing: border-box` on everything
+
+---
+
+## 4. NAVIGATION
+
+**Sticky top navbar** (position: sticky, top: 0, z-index: 200).
+- Background: `rgba(12,12,12,0.95)` with `backdrop-filter: blur(10px)`
+- Height: `var(--nav-h)` = 58px
+- Border bottom: `1px solid var(--border)`
+- Left side: Logo — text "Gym" + "OS" where "OS" is colored `--accent`. Font: Syne 800. Size 17px.
+- Right side: Two nav links — "Workout" (→ index.html) and "Stats" (→ stats.html)
+- Nav links: padding `6px 14px`, border-radius `var(--radius-sm)`, color `--text2`, no underline. Active page link has `background: var(--surface2)` and `color: var(--text)`.
+
+---
+
+## 5. WORKOUT PAGE (index.html + app.js)
+
+### 5.1 Layout
+- `.container`: max-width 740px, centered, padding `28px 20px 100px` (bottom padding leaves room for floating timer)
+
+### 5.2 Day Tab Bar
+A horizontal scrollable row of 5 tab buttons (Mon–Fri) plus 2 static "Rest" indicators (Sat/Sun shown below the panel separately).
+
+**Tab button (`.day-tab`)**:
+- Width: min 76px, flex-shrink: 0
+- Background: `--surface`, border: `1px solid --border`, border-radius: `--radius`
+- Two lines of text: `.tab-label` (day name, 10px, uppercase, `--text3`) and `.tab-name` (short description, 11px, `--text2`)
+- **Active state**: border becomes `1px solid --accent`, background becomes `--accent-dim`. Both text elements turn `--accent`.
+- Hover: border → `--border2`, background → `--surface2`
+
+**Rest day indicators** (Sat/Sun): same visual as tab but `cursor: default`, no hover effect, text in `--text3`.
+
+### 5.3 Main Panel
+`.panel`: background `--surface`, border `1px solid --border`, border-radius `--radius`, padding `20px 20px 8px`.
+
+**Day header**: 
+- `.day-title`: Syne 800, 20px, `letter-spacing: -0.02em`
+- `.badge-row`: flex row of small pill badges. Each `.badge`: `font-size: 11px`, `padding: 3px 10px`, `border-radius: 999px`, `background: --surface2`, `color: --text2`, `border: 1px solid --border`
+
+**Section labels** (`.sec-label`): `font-size: 10px`, `font-weight: 500`, uppercase, `letter-spacing: 0.1em`, color `--text3`, margin-top `22px`.
+
+### 5.4 Exercise Rows
+
+Each exercise is a collapsible row.
+
+**Collapsed state (`.ex`)**:
+- Border bottom: `1px solid --border` (last child has none)
+- `.ex-header`: flex row, padding `13px 0`, cursor pointer
+  - Left side: `.ex-name` (14px, weight 500, `--text`) + `.ex-note` (12px, `--text2`, margin-top 2px)
+  - Right side: two pill badges + a chevron arrow `▾`
+  - `.pill-sets`: background `--accent-dim`, color `--accent`, border `1px solid --accent-border` — shows the sets×reps (e.g. "4 × 5–6")
+  - `.pill` (RPE): background `--surface2`, color `--text2`, border `1px solid --border`
+  - `.chevron`: color `--text3`, transitions rotation 0.2s
+  - Hover: `.ex-name` color transitions to `--accent`
+
+**Open state (`.ex.open`)**:
+- `.chevron` rotates 180deg
+- `.ex-detail` becomes visible (display: block)
+
+**Exercise detail (`.ex-detail`)**: shown when exercise is open. Contains 4 sections stacked vertically:
+1. Info cards grid
+2. Set tracker
+3. Rest timer
+4. Weight log
+
+### 5.5 Info Cards Grid
+A 2-column grid (1-column on mobile <520px).
+
+Each `.detail-card`: background `--surface2`, border `1px solid --border`, border-radius `--radius-sm`, padding `12px`.
+- `.dc-label`: 10px, uppercase, `letter-spacing: 0.07em`, `--text3`, font-weight 500
+- `.dc-val`: 14px, font-weight 500, `--text`
+- `.dc-hint`: 12px, `--text2`, line-height 1.5
+
+**Card 1 — Rest between sets**: Shows the rest time (e.g. "90 sec") and a hint sentence.
+**Card 2 — How to progress**: Shows the progression rule for this exercise.
+
+### 5.6 Set Tracker
+
+`.set-tracker`: margin-bottom 14px.
+- `.st-label`: 11px, uppercase, `--text3`
+- `.set-bubbles`: flex row, gap 8px, flex-wrap
+
+**Set bubble (`.set-bubble`)**:
+- `width: 42px`, `height: 42px`, `border-radius: 50%`
+- Default: `background --surface2`, `border: 1px solid --border2`, `color --text2`, font-size 13px
+- Hover: border → `--accent`, color → `--accent`
+- **Done state (`.set-bubble.done`)**: background `--accent`, border `--accent`, color `--accent-text`. Shows a ✓ character.
+- **Active-next state (`.set-bubble.active-set`)**: border `--accent`, color `--accent`, box-shadow `0 0 0 3px rgba(204,255,0,0.12)` — indicates which set to do next
+
+**Behavior**: 
+- Clicking a bubble toggles it done/undone
+- Clicking a bubble that's NOT done marks it done AND auto-starts the rest timer
+- Un-completing a set also removes all sets after it
+- The "next" bubble (first undone one) always gets the `.active-set` highlight
+
+**Progress text** below bubbles:
+- 0 done: "Tap a bubble when you finish a set"
+- Partial: "{X} / {total} sets done" — the number is colored `--accent`
+- All done: "🎯 All sets done! Great work."
+
+### 5.7 Rest Timer
+
+`.rest-timer`: background `--surface2`, border `1px solid --border2`, border-radius `--radius-sm`, padding 14px. **Hidden by default** (`display: none`), shown with class `.visible` (`display: block`).
+
+Structure:
+- Top row: label "⏱ Rest timer" + two buttons: "Reset" and "Skip"
+- `.rt-countdown`: Syne 800, 36px, `--text`, `letter-spacing: -0.02em` — shows countdown like "1:30" or "45s"
+- Progress bar: thin 3px bar, background `--border`, accent-colored fill that grows left-to-right as time passes
+
+**Timer button style (`.rt-btn`)**: `background: --surface`, `border: 1px solid --border2`, border-radius 6px, color `--text2`, 12px, padding `4px 10px`. Hover: color → `--text`.
+
+**Done state (`.rest-timer.done`)**: border → `--accent-border`, background → `--accent-dim`. Countdown shows "Go! 🔥" in `--accent` color.
+
+**Behavior**:
+- Starts automatically when a set bubble is tapped
+- Counts down from the exercise's rest time
+- "Skip" stops the timer immediately
+- "Reset" restarts the timer from the full rest time
+- When it hits 0: plays bell sound + shows done state
+
+### 5.8 Bell Sound
+Use the Web Audio API — **no external audio files needed**. Generate a warm C-major arpeggio:
+
+```js
+function playBell() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  [261.63, 329.63, 392.00, 523.25].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const t = ctx.currentTime + i * 0.09;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.22, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 2.6);
+    osc.start(t); osc.stop(t + 2.6);
+  });
+}
+```
+Wrap in try/catch in case the browser blocks audio.
+
+### 5.9 Floating Timer Bar
+A pill-shaped bar **fixed to the bottom center** of the screen. Always visible whenever a timer is running (even when the exercise is scrolled out of view).
+
+`.float-timer`:
+- `position: fixed`, `bottom: 20px`, `left: 50%`, `transform: translateX(-50%) translateY(80px)` (off-screen by default)
+- When shown (`.float-timer.show`): `transform: translateX(-50%) translateY(0)` — animate with `transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1)` (bouncy entrance)
+- Background `--surface2`, border `1px solid --border2`, border-radius `999px`, padding `10px 20px`
+- `box-shadow: 0 8px 32px rgba(0,0,0,0.4)`
+- `z-index: 300`
+- Contents: "Resting" label + big countdown (Syne 18px 800) + small progress bar (80px wide, 3px tall) + "Skip" button
+- Done state (`.float-timer.done`): border → `--accent-border`, background → `rgba(204,255,0,0.12)`, countdown shows "Go! 🔥" in `--accent`
+- Auto-hides 5 seconds after timer finishes
+
+### 5.10 Weight Log Section
+
+`.weight-log`: background `rgba(204,255,0,0.04)`, border `1px solid --accent-border`, border-radius `--radius-sm`, padding 14px.
+
+- Title `.wl-title`: 11px, uppercase, `letter-spacing: 0.07em`, color `--accent`, font-weight 500
+
+**Form** (`.wl-form`): flex row, gap 8px, wraps on mobile.
+- Two fields: "Weight (kg)" and "Reps done"
+- Each `.wl-field`: label (11px, `--text2`) + number input
+- Input style: background `--surface`, border `1px solid --border2`, border-radius `--radius-sm`, color `--text`, font-size 15px, padding `8px 12px`, width 110px. On focus: border → `--accent`. Remove default number input spinners.
+- Save button (`.wl-submit`): background `--accent`, color `--accent-text`, no border, border-radius `--radius-sm`, font-size 13px, font-weight 500, padding `9px 18px`. Hover: opacity 0.88. Active: scale(0.97).
+- Pressing Enter in either input also submits
+
+**Log history** (`.wl-history`):
+- Small label "Previous logs" in `--text3`
+- Each entry (`.wl-entry`): flex row, padding `7px 0`, border-bottom `1px solid --border`
+  - Left: date in `--text2`
+  - Right: weight in `--text` + optional reps + optional diff badge
+  - Diff badge (`.wl-diff`): tiny, `font-size: 11px`. Green (`--accent`) if weight went up (+Xkg), red (`--danger`) if down, grey if same
+- Show last 8 entries, newest first
+
+### 5.11 Day Tip Box
+At the bottom of the panel:
+`.tip-box`: `border-left: 3px solid --accent`, background `--accent-dim`, border-radius `0 --radius-sm --radius-sm 0`, padding `10px 14px`, font-size 13px, color `--text2`, line-height 1.65. The word "Tip:" is `<strong>` in `--text`.
+
+---
+
+## 6. STATS PAGE (stats.html + stats.js)
+
+### 6.1 Layout
+Same `.container` as workout page.
+
+Page header:
+- `.page-title`: Syne 800, 24px
+- `.page-sub`: 14px, `--text2`, margin-top 4px
+
+### 6.2 Summary Cards
+4-column grid (auto-fit, min 140px). Each `.stat-card`: background `--surface`, border `1px solid --border`, border-radius `--radius`, padding 16px.
+- `.sc-label`: 11px, uppercase, `--text3`
+- `.sc-val`: Syne 800, 28px, tight letter-spacing, `--text`
+- `.sc-sub`: 12px, `--text2`
+
+One card gets `.highlight` class: border → `--accent-border`, background → `--accent-dim`, `.sc-val` color → `--accent`.
+
+**The 4 cards to show**:
+1. **Days logged** (highlight) — count of distinct dates in logs
+2. **This week** — count of days in last 7 with at least one log
+3. **Volume logged** — sum of (weight × reps) across all logs, formatted as "1.2k kg" if large
+4. **Exercises tracked** — count of distinct exercise IDs logged
+
+### 6.3 Progress Chart
+Section title: "Progress over time" in Syne 800 15px.
+
+`.chart-card`: background `--surface`, border `1px solid --border`, border-radius `--radius`, padding 20px.
+
+A `<select>` dropdown to pick which exercise to chart:
+- Style: background `--surface2`, border `1px solid --border2`, color `--text`, font DM Sans 13px, padding `7px 12px`, border-radius `--radius-sm`, min-width 200px
+- Populated with all exercises that have at least 1 log, ordered by most-logged first
+- `<option>` background should also be `--surface2` (Chrome respects this)
+
+Chart canvas: `height: 200px`, width fills container.
+
+Use **Chart.js** (load from CDN: `https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js`).
+
+Chart config:
+- Type: `'line'`
+- Dataset: `borderColor: '#CCFF00'`, `backgroundColor: 'rgba(204,255,0,0.07)'`, `borderWidth: 2`, `pointBackgroundColor: '#CCFF00'`, `pointRadius: 4`, `tension: 0.3`, `fill: true`
+- X axis: dates (formatted as "7 May 26"), ticks color `#444`, grid `rgba(255,255,255,0.04)`
+- Y axis: weight in kg, same styling
+- Tooltip: background `#202020`, title color `#EFEFEF`, body color `#7A7A7A`, border `rgba(255,255,255,0.07)`
+- No legend
+
+When exercise changes in dropdown: destroy old chart, create new one.
+Data: group logs by date, take highest weight per day, sort chronologically.
+
+### 6.4 Personal Records
+Section title: "Personal records 🏆" 
+
+`.pr-card`: background `--surface`, border `--border`, border-radius `--radius`, padding 20px.
+
+List of exercises sorted by highest weight. Each `.pr-item`: flex row, padding `11px 0`, border-bottom `--border`.
+- Left: exercise name (14px, weight 500) + day tag below it (11px, `--text2`)
+- Right: PR weight in Syne 800, 20px, `--accent` + date below in 11px `--text3`
+
+### 6.5 Most Improved
+Section title: "Most improved 🚀"
+
+`.volume-card`: same card styling. Only show exercises with 2+ logs. Show top 5 by % gain.
+
+For each exercise, show:
+- Top row: name + "+Xkg (+Y%)" right-aligned
+- Below: a thin horizontal bar (4px height, background `--border2`, accent fill) where width = (this exercise's % gain / max % gain) × 100%
+- Bar animates width on load with `transition: width 0.6s ease`
+
+### 6.6 Recent Activity
+Section title: "Recent activity"
+
+`.recent-card`: card styling, padding 20px. Show last 12 log entries.
+
+Each `.recent-item`:
+- Left: exercise name (14px, weight 500) + day label below (11px, `--text2`)
+- Right: weight+reps right-aligned (14px, weight 500) + date below (11px, `--text3`)
+
+At the bottom: a "Clear all data" button — small, subtle, `border: 1px solid rgba(255,85,85,0.3)`, text `--danger`, background none, opacity 0.6. On hover: opacity 1. Clicking it shows a `confirm()` dialog, then deletes all rows from Supabase and reloads.
+
+### 6.7 Empty States
+When there are no logs at all, each section shows a centered message in `--text3` with a link to the Workout page. Don't show the chart/PR/improved sections at all if there's nothing to display.
+
+---
+
+## 7. DATA (data.js)
+
+Store the full workout program as a `const PROGRAM` object. Structure:
+
+```js
+const PROGRAM = {
+  days: [
+    {
+      id: 'mon',
+      label: 'Mon',
+      tabName: 'Chest · Tris · Shoulders',
+      title: 'Chest, Triceps & Shoulders',
+      badges: ['Push day'],
+      tip: '...',
+      sections: [
+        {
+          label: 'Chest',
+          exercises: [
+            {
+              id: 'flat-barbell-bench',
+              name: 'Flat barbell bench press',
+              note: 'Main strength lift — go heavy',
+              sets: '4 × 5–6',
+              rpe: 'RPE 8–9',
+              rest: '2–3 min',    // display string
+              restSec: 150,       // seconds for timer (use midpoint for ranges)
+              prog: 'Add 2.5kg when you hit 6 reps on all 4 sets cleanly.',
+              numSets: 4          // number of set bubbles to render
+            },
+            // ... more exercises
+          ]
+        },
+        // ... more sections
+      ]
+    },
+    // ... tue, wed, thu, fri
+  ]
+};
+```
+
+### Full exercise list (copy exactly):
+
+**Monday — Chest, Triceps & Shoulders** (tip: "Start heavy on bench while you're completely fresh. Keep shoulder pressing strict — no leg drive. Triceps are already warm from pressing so save them for last.")
+- Chest: Flat barbell bench press (4×5–6, RPE 8–9, rest 150s), Incline dumbbell press (3×8–10, RPE 7–8, rest 90s), Cable fly low to high (3×12–15, RPE 7, rest 60s)
+- Shoulders: Seated DB overhead press (3×8–10, RPE 7–8, rest 90s), Lateral raises (4×12–15, RPE 7, rest 60s), Rear delt fly (3×15, RPE 6–7, rest 60s)
+- Triceps: Overhead cable tricep extension (3×10–12, RPE 7, rest 60s), Cable pushdown rope (3×12–15, RPE 7, rest 60s)
+
+**Tuesday — Back & Biceps** (tip: "Think elbows to hips — not hands pulling. This recruits your lats far more. Biceps are secondary today.")
+- Back thickness: Barbell row Pendlay (4×5–6, RPE 8–9, rest 150s), Seated cable row (3×8–10, RPE 7–8, rest 90s), Chest-supported DB row (3×10–12, RPE 7, rest 75s)
+- Back width: Weighted pull-ups or lat pulldown (4×6–8, RPE 8, rest 120s), Straight-arm cable pulldown (3×12–15, RPE 6–7, rest 60s)
+- Biceps: Barbell or EZ-bar curl (3×8–10, RPE 7–8, rest 75s), Incline dumbbell curl (3×10–12, RPE 7, rest 75s), Hammer curl (2×12, RPE 7, rest 60s)
+
+**Wednesday — Legs & Abs — Quad Focus** (tip: "This is your heavy quad day. Squat first while your CNS is completely fresh. Everything after is just volume.")
+- Quads: Barbell back squat (4×5–6, RPE 8–9, rest 180s), Leg press (3×10–12, RPE 8, rest 120s), Hack squat or sissy squat (3×12–15, RPE 7–8, rest 90s)
+- Hamstrings & Glutes: Romanian deadlift (3×8–10, RPE 7–8, rest 90s), Lying leg curl (3×12–15, RPE 7, rest 75s)
+- Calves: Standing calf raise (4×15–20, RPE 8, rest 60s)
+- Abs: Cable crunch (3×15–20, RPE 7, rest 60s), Hanging leg raise (3×12–15, RPE 7, rest 60s)
+
+**Thursday — Upper Body** (badges: ["Chest & shoulder focus", "Light back only"], tip: "Back only had 1 day rest since Tuesday — keep rows moderate. Chest and shoulders are fully recovered so push those hard.")
+- Chest: Incline barbell or DB press (4×8–10, RPE 7–8, rest 90s), Weighted dips (3×8–12, RPE 7–8, rest 90s), Pec deck or cable fly (3×12–15, RPE 7, rest 60s)
+- Shoulders: Cable lateral raise (4×15, RPE 7, rest 60s), Face pull (3×15–20, RPE 6, rest 60s)
+- Light back: Single-arm DB row (3×12, RPE 6–7, rest 60s), Lat pulldown wide grip (3×12–15, RPE 6–7, rest 60s)
+- Arms: Superset DB curl + skull crusher (3×10–12 each, RPE 7, rest 90s), Tricep pushdown finisher (2×15, RPE 6–7, rest 45s)
+
+**Friday — Legs & Abs — Hip & Hamstring Focus** (tip: "Opposite focus from Wednesday. Deadlift is the main event of the entire week. Everything else supports it.")
+- Hinge & Hamstrings: Conventional deadlift (4×4–5, RPE 8–9, rest 210s), Barbell hip thrust (4×8–10, RPE 8, rest 120s), Nordic curl or seated leg curl (3×8–12, RPE 7–8, rest 90s)
+- Quad accessory: Bulgarian split squat (3×10 each, RPE 7–8, rest 90s), Leg extension (3×15, RPE 7, rest 60s)
+- Calves: Seated calf raise (4×15–20, RPE 8, rest 60s)
+- Abs: Weighted decline sit-up (3×12–15, RPE 7, rest 60s), Plank variation (3×45sec, RPE 7, rest 45s), Ab wheel rollout (3×10–12, RPE 7, rest 60s)
+
+---
+
+## 8. SUPABASE SETUP (config.js + README.md)
+
+### config.js
+```js
+const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_PUBLIC_KEY_HERE';
+```
+If the URL still contains `YOUR_PROJECT`, the app falls back to localStorage automatically.
+
+### SQL to create the table (goes in README.md, user runs it in Supabase SQL Editor):
+```sql
+CREATE TABLE logs (
+  id            UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  exercise_id   TEXT NOT NULL,
+  exercise_name TEXT NOT NULL,
+  day_id        TEXT NOT NULL,
+  weight        NUMERIC(6,2) NOT NULL,
+  reps          INTEGER,
+  date          DATE NOT NULL DEFAULT CURRENT_DATE,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Disable RLS — this is a personal app, you're the only user
+ALTER TABLE logs DISABLE ROW LEVEL SECURITY;
+```
+
+### Load Supabase in HTML (CDN, no npm):
+```html
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+```
+This exposes a global `supabase` object. Create client with:
+```js
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+```
+
+---
+
+## 9. APP.JS LOGIC (Workout Page)
+
+### State variables:
+```js
+let sb = null;           // supabase client or null if not configured
+let activeDay = 0;       // index of current day (0=Mon ... 4=Fri)
+let openExId = null;     // id of currently expanded exercise, or null
+let completedSets = {};  // { [exId]: Set<number> } — which sets are done this session
+let timer = { running: false, exId: null, seconds: 0, total: 0, interval: null };
+```
+
+### On DOMContentLoaded:
+1. Check if `SUPABASE_URL` is configured (doesn't contain 'YOUR_PROJECT')
+2. If yes: create supabase client, store in `sb`
+3. If no: show a yellow info banner at top saying "Supabase not configured — using local storage. Open config.js to set up."
+4. Call `buildFloatTimer()` — creates the floating pill element and appends to body
+5. Call `renderTabs()` — creates day tab buttons
+6. Call `renderDay()` — renders day 0
+
+### renderDay():
+- Get `PROGRAM.days[activeDay]`
+- Build inner HTML for `.panel` — day title, badges, section labels, exercise rows
+- Each exercise row has a `.ex-header` with `data-exid` attribute
+- If `openExId` is set, that exercise's detail is rendered expanded
+- After setting innerHTML, attach click listeners to all `.ex-header` elements
+- If `openExId`, also call: `attachSetListeners()`, `attachTimerButtons()`, `attachLogForm()`, `loadAndRenderLogs()`
+
+### toggleEx(exId):
+- If `openExId === exId`, set `openExId = null` (close it)
+- Otherwise set `openExId = exId` (open it, closes previous)
+- Call `renderDay()`
+- If opening, scroll exercise into view after 60ms delay
+
+### Set tracker behavior:
+- `completedSets[exId]` is a `Set<number>` (1-indexed set numbers)
+- Tapping a done bubble: removes it AND all bubbles after it (in case order matters)
+- Tapping an undone bubble: adds it AND starts the rest timer
+- After any change: re-render just the bubbles HTML and progress text (don't re-render whole page)
+
+### Timer logic:
+- `startTimer(exId, totalSeconds)`: clears any existing interval, sets timer state, shows float timer, starts `setInterval` every 1000ms
+- Each tick: decrement `timer.seconds`, update inline countdown + progress bar + float bar
+- Format: show as `M:SS` if ≥ 60 seconds, else just `Xs`
+- Progress bar width = `((total - remaining) / total) * 100%`
+- At 0: clear interval, call `playBell()`, show done state ("Go! 🔥"), auto-hide float timer after 5s
+- `stopTimer(hideFloat)`: clears interval, resets inline display, optionally hides float bar
+
+### Weight logging:
+- On Save click (or Enter): read weight + reps inputs
+- Validate: weight must be > 0, show toast if invalid
+- Set button text to "Saving…" and disable it
+- If `sb` exists: `await sb.from('logs').insert({ exercise_id, exercise_name, day_id, weight, reps, date })`
+- Else: load from `localStorage.getItem('gymLogs')`, unshift new entry, save back
+- On success: clear inputs, show "Logged! 💪" toast, reload logs for this exercise
+- On Supabase error: show error toast, re-enable button
+
+### Loading log history:
+- If `sb`: `await sb.from('logs').select('*').eq('exercise_id', exId).order('date', {ascending: false}).order('created_at', {ascending: false}).limit(8)`
+- Else: filter localStorage array for this exercise_id, take first 8
+- Render entries with date, weight, optional reps, and diff vs previous entry
+
+### Toast notification:
+- One `<div class="toast" id="toast">` at bottom of body
+- Show by adding `.show` class (opacity 1, translateY 0), remove after 2.8s
+- If error: background `--danger`, color white
+- If success: background `--accent`, color `--accent-text`
+
+---
+
+## 10. STATS.JS LOGIC
+
+### On DOMContentLoaded:
+1. Check config, init supabase or fallback
+2. Show loading state
+3. Fetch ALL logs: `await sb.from('logs').select('*').order('date', {ascending: false})`
+4. Render all sections
+
+### Calculations:
+- **Days logged**: `new Set(logs.map(l => l.date)).size`
+- **This week**: loop last 7 days, count days with at least 1 log
+- **Volume**: `logs.reduce((sum, l) => sum + l.weight * (l.reps || 1), 0)` — format: show as "1.4k" if ≥1000
+- **Exercises tracked**: `new Set(logs.map(l => l.exercise_id)).size`
+- **PRs**: group by exercise_id, find max weight per exercise
+- **Most improved**: for each exercise with 2+ logs, sort by date, compare first vs latest weight. Calculate `gain = latest - first` and `pct = (gain/first)*100`. Show top 5 by % gain. Only show exercises with positive gain.
+- **Progress chart data**: group logs by exercise_id and date, take max weight per date, sort chronologically
+
+### Chart destruction:
+Always `chart.destroy()` before creating a new one when the dropdown changes.
+
+---
+
+## 11. HTML STRUCTURE
+
+### index.html
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vessel — Workout</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <a href="index.html" class="nav-logo">Gym<span>OS</span></a>
+    <div class="nav-links">
+      <a href="index.html" class="nav-link active">Workout</a>
+      <a href="stats.html" class="nav-link">Stats</a>
+    </div>
+  </nav>
+  <div class="container">
+    <div class="day-tabs" id="day-tabs"></div>
+    <div class="panel" id="panel"></div>
+    <div class="rest-row">
+      <div class="rest-day"><div class="tab-label">Sat</div><div class="tab-name">Rest</div></div>
+      <div class="rest-day"><div class="tab-label">Sun</div><div class="tab-name">Rest</div></div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <!-- Scripts at bottom, in this order -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+```
+
+### stats.html
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vessel — Stats</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav><!-- same nav, Stats link has .active --></nav>
+  <div class="container" id="content">
+    <div class="page-header">
+      <div class="page-title">Your progress</div>
+      <div class="page-sub">All your logged weights and gains</div>
+    </div>
+    <div id="summary-cards" class="stats-grid"></div>
+    <div id="progress-section"></div>
+    <div id="pr-section"></div>
+    <div id="improved-section"></div>
+    <div id="recent-section"></div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="config.js"></script>
+  <script src="data.js"></script>
+  <script src="stats.js"></script>
+</body>
+</html>
+```
+
+---
+
+## 12. RESPONSIVE DESIGN
+
+At `max-width: 520px`:
+- `.detail-grid`: switch to 1 column
+- `.stats-grid`: switch to 2 columns
+- `.wl-form`: flex-direction column, inputs go full width
+- `.day-title`: reduce to 17px
+- `.float-timer`: smaller padding, hide the progress bar inside it (show only label + countdown + skip button)
+- Reduce container horizontal padding to 14px
+
+---
+
+## 13. DEPLOYMENT
+
+### Option 1 — Netlify (recommended, free):
+1. Go to netlify.com, sign up free
+2. Drag and drop the entire `vessel/` folder onto the Netlify dashboard
+3. Done — get a public URL instantly. Can also connect to GitHub for auto-deploy.
+
+### Option 2 — Vercel (free):
+1. `npm i -g vercel` then `vercel` in the project folder
+2. Or drag-drop at vercel.com
+
+### Option 3 — GitHub Pages (free):
+1. Push folder to a GitHub repo
+2. Settings → Pages → Deploy from main branch
+3. Get a `username.github.io/repo-name` URL
+
+### Option 4 — Local:
+- Install VS Code + Live Server extension
+- Right-click index.html → "Open with Live Server"
+- OR: `npx serve .` in the folder
+
+**DO NOT** just double-click index.html — Supabase calls need a proper server (even localhost works).
+
+---
+
+## 14. README.md CONTENT
+
+The README should include:
+1. Project description
+2. How to set up Supabase (step by step)
+3. The SQL to run (from section 8)
+4. How to run locally
+5. How to deploy
+6. Note: set tracker and timer are session-only (reset on page refresh) — this is intentional
+
+---
+
+## 15. IMPORTANT IMPLEMENTATION NOTES FOR THE AI AGENT
+
+1. **Script order matters**: Supabase CDN → config.js → data.js → app.js/stats.js. Never swap this.
+2. **No localStorage for timers/sets** — these are in-memory only, reset on refresh. Only weight logs go to Supabase.
+3. **localStorage fallback**: if `sb === null`, use `localStorage.getItem('gymLogs')` as a JSON array. Same shape as Supabase rows but with `id: Date.now().toString()`.
+4. **Don't re-render the whole page** when only bubbles change — update just the bubbles div innerHTML to avoid losing timer state.
+5. **Timer state is global** — only one timer can run at a time. Starting a new timer stops the old one.
+6. **Chart.js canvas**: must call `chart.destroy()` before re-creating, or you get memory leaks and duplicate charts.
+7. **Audio context**: must be created inside a user interaction handler (the set bubble click counts). Wrap in try/catch.
+8. **Date formatting**: always append `T12:00:00` when constructing `new Date(dateString)` to avoid timezone-shifted dates.
+9. **Supabase insert**: the `date` field should be `new Date().toISOString().split('T')[0]` to get `YYYY-MM-DD` format.
+10. **No external icon libraries** — use emoji or Unicode characters for icons (⏱ 📈 🎯 💪 🔥 🏆 🚀).

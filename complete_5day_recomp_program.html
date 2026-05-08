@@ -1,0 +1,264 @@
+
+<style>
+* { box-sizing: border-box; }
+.tabs { display:flex; gap:6px; margin-bottom:1.5rem; }
+.tab { cursor:pointer; border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); padding:10px 8px; text-align:center; background:var(--color-background-primary); transition:all 0.15s; flex:1; min-width:0; }
+.tab:hover { background:var(--color-background-secondary); border-color:var(--color-border-secondary); }
+.tab.on { border:2px solid #7F77DD; background:#EEEDFE; }
+.tab.on .tl { color:#534AB7; }
+.tab.on .tn { color:#3C3489; }
+.tl { font-size:10px; color:var(--color-text-secondary); font-weight:500; text-transform:uppercase; letter-spacing:0.05em; }
+.tn { font-size:12px; font-weight:500; color:var(--color-text-primary); margin-top:3px; line-height:1.3; }
+.sec-label { font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.08em; color:var(--color-text-tertiary); margin:16px 0 4px; padding:0 2px; }
+.ex { border-bottom:0.5px solid var(--color-border-tertiary); }
+.ex:last-child { border-bottom:none; }
+.ex-header { display:flex; justify-content:space-between; align-items:center; padding:10px 2px; cursor:pointer; gap:10px; }
+.ex-header:hover .ex-name { color:#534AB7; }
+.ex-left { flex:1; min-width:0; }
+.ex-name { font-size:14px; color:var(--color-text-primary); font-weight:500; transition:color 0.1s; }
+.ex-sub { font-size:12px; color:var(--color-text-secondary); margin-top:2px; }
+.ex-right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.pill { font-size:11px; font-weight:500; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+.pill-sets { background:#EEEDFE; color:#3C3489; }
+.pill-rpe { background:var(--color-background-secondary); color:var(--color-text-secondary); }
+.chevron { font-size:14px; color:var(--color-text-tertiary); transition:transform 0.2s; }
+.ex.open .chevron { transform:rotate(180deg); }
+.ex-detail { display:none; padding:0 2px 12px; }
+.ex.open .ex-detail { display:block; }
+.detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.detail-card { background:var(--color-background-secondary); border-radius:var(--border-radius-md); padding:10px 12px; }
+.detail-icon { font-size:15px; color:var(--color-text-tertiary); margin-bottom:4px; }
+.detail-label { font-size:10px; text-transform:uppercase; letter-spacing:0.06em; font-weight:500; color:var(--color-text-tertiary); margin-bottom:4px; }
+.detail-val { font-size:13px; font-weight:500; color:var(--color-text-primary); margin-bottom:2px; }
+.detail-hint { font-size:12px; color:var(--color-text-secondary); line-height:1.5; }
+.tip { border-left:3px solid #7F77DD; border-radius:0; padding:10px 14px; margin-top:16px; font-size:13px; color:var(--color-text-secondary); line-height:1.6; background:var(--color-background-secondary); }
+.tip strong { color:var(--color-text-primary); }
+.badge { display:inline-block; font-size:11px; padding:3px 9px; border-radius:999px; font-weight:500; }
+.rest-tag { background:var(--color-background-secondary); color:var(--color-text-secondary); }
+.day-header { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px; }
+.day-title { font-size:17px; font-weight:500; color:var(--color-text-primary); }
+.hint-row { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--color-text-tertiary); margin-bottom:2px; }
+</style>
+
+<h2 class="sr-only">Complete 5-day body recomposition program — click each exercise to see rest times and progression tips</h2>
+
+<div style="padding:1rem 0;">
+  <div class="tabs" id="tabs"></div>
+  <div id="panel" style="background:var(--color-background-primary); border:0.5px solid var(--color-border-tertiary); border-radius:var(--border-radius-lg); padding:1rem 1.25rem;"></div>
+
+  <div style="display:flex; gap:6px; margin-top:10px;">
+    <div class="tab" style="cursor:default; background:var(--color-background-secondary);"><div class="tl">Sat</div><div class="tn" style="color:var(--color-text-secondary);">Rest</div></div>
+    <div class="tab" style="cursor:default; background:var(--color-background-secondary);"><div class="tl">Sun</div><div class="tn" style="color:var(--color-text-secondary);">Rest</div></div>
+  </div>
+
+  <div style="margin-top:1.25rem; display:flex; gap:8px; flex-wrap:wrap;">
+    <button onclick="sendPrompt('Give me a full warm-up routine for each day of my program')" style="font-size:13px;">Full warm-up routine ↗</button>
+    <button onclick="sendPrompt('What should I eat for body recomposition on this program?')" style="font-size:13px;">Nutrition for recomp ↗</button>
+    <button onclick="sendPrompt('How long until I start seeing results on this program?')" style="font-size:13px;">When will I see results? ↗</button>
+  </div>
+</div>
+
+<script>
+const days = [
+  {
+    tab: { label:"Mon", name:"Chest / Tris / Shoulders" },
+    title: "Chest, triceps & shoulders",
+    badges: [{ text:"Push day", bg:"#EEEDFE", color:"#3C3489" }],
+    tip: "Start heavy on bench while you're completely fresh. Keep shoulder pressing strict — no leg drive. Your triceps are already warm from pressing so save them for last.",
+    sections: [
+      { label:"Chest", exercises:[
+        { name:"Flat barbell bench press", sub:"Main strength lift — go heavy", sets:"4 × 5–6", rpe:"RPE 8–9", rest:"2–3 min", restHint:"CNS-heavy — don't rush. Breathe fully before each set.", prog:"Add 2.5kg when you hit 6 reps on all 4 sets cleanly." },
+        { name:"Incline dumbbell press", sub:"Upper chest emphasis", sets:"3 × 8–10", rpe:"RPE 7–8", rest:"90 sec", restHint:"Moderate rest — enough to recover but keep intensity up.", prog:"Move up one dumbbell size when you hit 10 reps on all 3 sets." },
+        { name:"Cable fly (low to high)", sub:"Full stretch at the bottom", sets:"3 × 12–15", rpe:"RPE 7", rest:"60 sec", restHint:"Short rest is fine here — it's a pump movement.", prog:"Add one plate when you reach 15 reps comfortably on all sets." },
+      ]},
+      { label:"Shoulders", exercises:[
+        { name:"Seated dumbbell overhead press", sub:"Controlled, full range of motion", sets:"3 × 8–10", rpe:"RPE 7–8", rest:"90 sec", restHint:"Give shoulders time — they fatigue faster than chest.", prog:"Move up one dumbbell size when you nail 10 reps across all sets." },
+        { name:"Lateral raises", sub:"3-second slow negative every rep", sets:"4 × 12–15", rpe:"RPE 7", rest:"60 sec", restHint:"60 sec max — the burn is part of it.", prog:"Add 2kg when all 4 sets reach 15 reps with control." },
+        { name:"Rear delt fly (cable or DB)", sub:"Often skipped — never skip it", sets:"3 × 15", rpe:"RPE 6–7", rest:"60 sec", restHint:"Light weight, short rest. Pure isolation.", prog:"Small jumps only. Add 2kg or one pin when 15 reps feel easy." },
+      ]},
+      { label:"Triceps", exercises:[
+        { name:"Overhead cable tricep extension", sub:"Long head emphasis — huge stretch", sets:"3 × 10–12", rpe:"RPE 7", rest:"60–75 sec", restHint:"Triceps are already pre-fatigued from pressing — 60 sec is enough.", prog:"Add one plate when you hit 12 reps on all 3 sets." },
+        { name:"Cable pushdown (rope)", sub:"Spread the rope at the bottom", sets:"3 × 12–15", rpe:"RPE 7", rest:"60 sec", restHint:"Finisher — short rest, pump the muscle.", prog:"Add one plate when 15 reps feel easy across all sets." },
+      ]},
+    ]
+  },
+  {
+    tab: { label:"Tue", name:"Back / Biceps" },
+    title: "Back & biceps",
+    badges: [{ text:"Pull day", bg:"#E1F5EE", color:"#085041" }],
+    tip: "Think elbows to hips — not hands pulling. This recruits your lats far more than gripping hard. Biceps are secondary today; let them assist, don't lead with them.",
+    sections: [
+      { label:"Back — thickness", exercises:[
+        { name:"Barbell row (Pendlay or bent-over)", sub:"Heaviest back movement of the week", sets:"4 × 5–6", rpe:"RPE 8–9", rest:"2–3 min", restHint:"Treat this like a squat. Full recovery between sets.", prog:"Add 2.5–5kg when you hit 6 reps on all 4 sets with strict form." },
+        { name:"Seated cable row (close grip)", sub:"Full stretch forward, full squeeze back", sets:"3 × 8–10", rpe:"RPE 7–8", rest:"90 sec", restHint:"Controlled tempo — don't rush the rest.", prog:"Add one plate when all 3 sets reach 10 clean reps." },
+        { name:"Chest-supported dumbbell row", sub:"No momentum — completely strict", sets:"3 × 10–12", rpe:"RPE 7", rest:"75 sec", restHint:"Support eliminates cheating — focus on the contraction.", prog:"Move up one dumbbell when 12 reps feel controlled on all sets." },
+      ]},
+      { label:"Back — width", exercises:[
+        { name:"Weighted pull-ups or lat pulldown", sub:"Pull-ups if you can do 6+ reps", sets:"4 × 6–8", rpe:"RPE 8", rest:"2 min", restHint:"Width work is demanding — don't cut rest short.", prog:"Add 2.5kg belt weight (pull-ups) or one plate (pulldown) at 8 reps." },
+        { name:"Straight-arm cable pulldown", sub:"Great lat isolation finisher", sets:"3 × 12–15", rpe:"RPE 6–7", rest:"60 sec", restHint:"Low intensity finisher — short rest is the point.", prog:"Add one plate when 15 reps feel effortless." },
+      ]},
+      { label:"Biceps", exercises:[
+        { name:"Barbell or EZ-bar curl", sub:"Strict form — no swinging", sets:"3 × 8–10", rpe:"RPE 7–8", rest:"75 sec", restHint:"Biceps recover quickly but still need 60–75 sec.", prog:"Add 2.5kg when you hit 10 clean reps on all 3 sets." },
+        { name:"Incline dumbbell curl", sub:"Use light weight — the stretch is extreme", sets:"3 × 10–12", rpe:"RPE 7", rest:"60–75 sec", restHint:"Don't rush — the stretch position is where gains happen.", prog:"Move up one DB when you hit 12 controlled reps on all sets." },
+        { name:"Hammer curl", sub:"Brachialis and forearm builder", sets:"2 × 12", rpe:"RPE 7", rest:"60 sec", restHint:"Finisher — short rest, stay pumped.", prog:"Move up one DB when 12 reps feel comfortable on both sets." },
+      ]},
+    ]
+  },
+  {
+    tab: { label:"Wed", name:"Legs / Abs" },
+    title: "Legs & abs — quad focus",
+    badges: [{ text:"Legs day 1", bg:"#FAECE7", color:"#712B13" }],
+    tip: "This is your heavy quad day. Squat first while your CNS is completely fresh — the quality of your squats depends on it. Everything after is just volume.",
+    sections: [
+      { label:"Quads", exercises:[
+        { name:"Barbell back squat", sub:"No shortcuts. Full depth, full effort.", sets:"4 × 5–6", rpe:"RPE 8–9", rest:"3 min", restHint:"Squats are the most taxing thing you'll do all week. 3 full minutes.", prog:"Add 2.5–5kg when you hit 6 solid reps on all 4 sets." },
+        { name:"Leg press", sub:"Feet low and close for more quad", sets:"3 × 10–12", rpe:"RPE 8", rest:"2 min", restHint:"Legs recover slower than upper body. Take the full 2 min.", prog:"Add one plate per side when all 3 sets hit 12 reps." },
+        { name:"Hack squat or sissy squat", sub:"Brutal quad finisher", sets:"3 × 12–15", rpe:"RPE 7–8", rest:"90 sec", restHint:"You're already fatigued — 90 sec is plenty.", prog:"Add one plate or 5kg when 15 reps feel manageable on all sets." },
+      ]},
+      { label:"Hamstrings & glutes", exercises:[
+        { name:"Romanian deadlift", sub:"Push hips back — feel every inch of stretch", sets:"3 × 8–10", rpe:"RPE 7–8", rest:"90 sec", restHint:"Let the hamstrings fully tighten before the next set.", prog:"Add 5kg when you hit 10 reps on all 3 sets with control." },
+        { name:"Lying leg curl", sub:"3-second negative on every rep", sets:"3 × 12–15", rpe:"RPE 7", rest:"75 sec", restHint:"Isolation — short rest keeps the pump going.", prog:"Add one plate when all 3 sets reach 15 smooth reps." },
+      ]},
+      { label:"Calves", exercises:[
+        { name:"Standing calf raise", sub:"Full stretch at bottom, 1-sec pause at top", sets:"4 × 15–20", rpe:"RPE 8", rest:"60 sec", restHint:"Calves are dense — short rest forces more adaptation.", prog:"Add weight when 20 reps feel easy. Don't skip the stretch." },
+      ]},
+      { label:"Abs", exercises:[
+        { name:"Cable crunch", sub:"Weighted — don't just crunch air", sets:"3 × 15–20", rpe:"RPE 7", rest:"60 sec", restHint:"Treat abs like any other muscle — rest, then work.", prog:"Add one plate when 20 reps feel easy across all 3 sets." },
+        { name:"Hanging leg raise", sub:"Control the swing — no kipping", sets:"3 × 12–15", rpe:"RPE 7", rest:"60 sec", restHint:"If grip gives out, use straps.", prog:"Add ankle weights or slow down the tempo when 15 reps is easy." },
+      ]},
+    ]
+  },
+  {
+    tab: { label:"Thu", name:"Upper Body" },
+    title: "Upper body",
+    badges: [
+      { text:"Chest & shoulder focus", bg:"#E6F1FB", color:"#0C447C" },
+      { text:"Light back only", bg:"#F1EFE8", color:"#444441" },
+    ],
+    tip: "Back only had 1 day rest since Tuesday — keep rows moderate weight and high control. Chest and shoulders are fully recovered, so push those hard.",
+    sections: [
+      { label:"Chest", exercises:[
+        { name:"Incline barbell or dumbbell press", sub:"Different angle from Monday — upper chest", sets:"4 × 8–10", rpe:"RPE 7–8", rest:"90 sec", restHint:"Not a max effort day — 90 sec keeps intensity steady.", prog:"Add 2.5kg or move up one DB when 10 reps land on all 4 sets." },
+        { name:"Weighted dips", sub:"Lower chest + tricep strength", sets:"3 × 8–12", rpe:"RPE 7–8", rest:"90 sec", restHint:"Full dip depth — chest forward, lean slightly.", prog:"Add 2.5kg belt weight when you hit 12 reps on all 3 sets." },
+        { name:"Pec deck or cable fly", sub:"Squeeze and hold 1 sec at peak", sets:"3 × 12–15", rpe:"RPE 7", rest:"60 sec", restHint:"Pure stretch and squeeze. Short rest is fine.", prog:"Add one plate when 15 reps feel easy on all sets." },
+      ]},
+      { label:"Shoulders", exercises:[
+        { name:"Cable lateral raise", sub:"Better constant tension than dumbbells", sets:"4 × 15", rpe:"RPE 7", rest:"60 sec", restHint:"Short rest amplifies the lateral delt burn — embrace it.", prog:"Add one plate when all 4 sets reach 15 controlled reps." },
+        { name:"Face pull", sub:"Shoulder health — do this every session", sets:"3 × 15–20", rpe:"RPE 6", rest:"60 sec", restHint:"This is prehab as much as training. Never skip.", prog:"Small increments only. Add one plate when 20 reps feel easy." },
+      ]},
+      { label:"Light back", exercises:[
+        { name:"Single-arm dumbbell row", sub:"Moderate weight — back had 1 day rest", sets:"3 × 12", rpe:"RPE 6–7", rest:"60 sec", restHint:"Easy today. Full range, feel the lat. Don't ego lift.", prog:"Don't push progression here. Keep it moderate every Thursday." },
+        { name:"Lat pulldown (wide grip)", sub:"Controlled — not heavy today", sets:"3 × 12–15", rpe:"RPE 6–7", rest:"60 sec", restHint:"Width work with light load. Focus on the mind-muscle connection.", prog:"Match Tuesday's weight when back is fully recovered. Today stays lighter." },
+      ]},
+      { label:"Arms", exercises:[
+        { name:"Superset: DB curl + skull crusher", sub:"Back to back, 15 sec between moves", sets:"3 × 10–12 each", rpe:"RPE 7", rest:"90 sec after each superset", restHint:"Rest after completing both moves. Burns efficiently.", prog:"Increase either the curl or the extension when both hit 12 reps." },
+        { name:"Tricep pushdown (pump finisher)", sub:"High rep, short rest — pure pump", sets:"2 × 15", rpe:"RPE 6–7", rest:"45 sec", restHint:"Finisher. Don't overthink it — just pump the muscle.", prog:"Not a main lift — keep it light and feel every rep." },
+      ]},
+    ]
+  },
+  {
+    tab: { label:"Fri", name:"Legs / Abs" },
+    title: "Legs & abs — hip & hamstring focus",
+    badges: [{ text:"Legs day 2", bg:"#FAECE7", color:"#712B13" }],
+    tip: "Opposite focus from Wednesday — hips and hamstrings lead today. Deadlift is the main event of the whole week. Everything else supports it.",
+    sections: [
+      { label:"Hinge & hamstrings", exercises:[
+        { name:"Conventional deadlift", sub:"Heaviest lift of the entire week", sets:"4 × 4–5", rpe:"RPE 8–9", rest:"3–4 min", restHint:"Deadlifts are uniquely taxing on the nervous system. Take every second of rest.", prog:"Add 5kg when you hit 5 crisp reps on all 4 sets. Never grind ugly reps." },
+        { name:"Barbell hip thrust", sub:"Best glute builder — go heavy here", sets:"4 × 8–10", rpe:"RPE 8", rest:"2 min", restHint:"Heavy glute work needs real recovery. 2 full minutes.", prog:"Add 5kg when you hit 10 reps on all 4 sets with a full lockout." },
+        { name:"Nordic curl or seated leg curl", sub:"Hamstring lengthening — eccentric focus", sets:"3 × 8–12", rpe:"RPE 7–8", rest:"90 sec", restHint:"Eccentric work causes more soreness — rest well and hydrate.", prog:"Add ankle weight (Nordics) or one plate (machine) at 12 reps." },
+      ]},
+      { label:"Quad accessory", exercises:[
+        { name:"Bulgarian split squat", sub:"Unilateral balance + quad depth", sets:"3 × 10 each", rpe:"RPE 7–8", rest:"90 sec", restHint:"Rest is per leg pair — not per leg. Take the full 90 sec.", prog:"Add 2–4kg dumbbells when 10 reps feel stable on both legs." },
+        { name:"Leg extension", sub:"Quad isolation finisher", sets:"3 × 15", rpe:"RPE 7", rest:"60 sec", restHint:"Pure isolation — short rest keeps the quad pump alive.", prog:"Add one plate when 15 reps feel comfortable on all sets." },
+      ]},
+      { label:"Calves", exercises:[
+        { name:"Seated calf raise", sub:"Hits soleus — different from standing", sets:"4 × 15–20", rpe:"RPE 8", rest:"60 sec", restHint:"Short rest, high reps. Soleus responds well to volume.", prog:"Add weight when 20 reps feel easy. Prioritize the stretch." },
+      ]},
+      { label:"Abs", exercises:[
+        { name:"Weighted decline sit-up", sub:"Add a plate when bodyweight is easy", sets:"3 × 12–15", rpe:"RPE 7", rest:"60 sec", restHint:"Controlled descent — don't flop down.", prog:"Hold a 5kg plate when 15 bodyweight reps feel easy." },
+        { name:"Plank variation", sub:"Side plank, RKC, or standard", sets:"3 × 45 sec", rpe:"RPE 7", rest:"45 sec", restHint:"Short rest amplifies core fatigue — that's the point.", prog:"Increase hold to 60 sec, then add weight vest or elevate feet." },
+        { name:"Ab wheel rollout", sub:"Slow and fully controlled", sets:"3 × 10–12", rpe:"RPE 7", rest:"60 sec", restHint:"One of the hardest ab moves — don't rush.", prog:"Increase range of motion over time, or add reps." },
+      ]},
+    ]
+  }
+];
+
+let activeDay = 0;
+let openEx = null;
+
+function buildTabs() {
+  const container = document.getElementById('tabs');
+  days.forEach((d, i) => {
+    const el = document.createElement('div');
+    el.className = 'tab' + (i === 0 ? ' on' : '');
+    el.innerHTML = `<div class="tl">${d.tab.label}</div><div class="tn">${d.tab.name}</div>`;
+    el.onclick = () => switchDay(i);
+    container.appendChild(el);
+  });
+}
+
+function switchDay(i) {
+  activeDay = i;
+  openEx = null;
+  document.querySelectorAll('.tab').forEach((t, idx) => t.classList.toggle('on', idx === i));
+  renderDay();
+}
+
+function toggleEx(id) {
+  openEx = openEx === id ? null : id;
+  renderDay();
+}
+
+function renderDay() {
+  const d = days[activeDay];
+  let html = `<div class="day-header">
+    <span class="day-title">${d.title}</span>`;
+  d.badges.forEach(b => {
+    html += `<span class="badge" style="background:${b.bg};color:${b.color}">${b.text}</span>`;
+  });
+  html += `</div>`;
+  html += `<div class="hint-row"><i class="ti ti-hand-click" aria-hidden="true" style="font-size:13px;"></i><span>Tap any exercise to see rest time and progression</span></div>`;
+
+  d.sections.forEach(sec => {
+    html += `<div class="sec-label">${sec.label}</div>`;
+    sec.exercises.forEach((ex, ei) => {
+      const id = `${activeDay}-${sec.label}-${ei}`;
+      const isOpen = openEx === id;
+      html += `<div class="ex${isOpen ? ' open' : ''}">
+        <div class="ex-header" onclick="toggleEx('${id}')">
+          <div class="ex-left">
+            <div class="ex-name">${ex.name}</div>
+            <div class="ex-sub">${ex.sub}</div>
+          </div>
+          <div class="ex-right">
+            <span class="pill pill-sets">${ex.sets}</span>
+            <span class="pill pill-rpe">${ex.rpe}</span>
+            <i class="ti ti-chevron-down chevron" aria-hidden="true"></i>
+          </div>
+        </div>
+        <div class="ex-detail">
+          <div class="detail-grid">
+            <div class="detail-card">
+              <div class="detail-icon"><i class="ti ti-clock" aria-hidden="true"></i></div>
+              <div class="detail-label">Rest between sets</div>
+              <div class="detail-val">${ex.rest}</div>
+              <div class="detail-hint">${ex.restHint}</div>
+            </div>
+            <div class="detail-card">
+              <div class="detail-icon"><i class="ti ti-trending-up" aria-hidden="true"></i></div>
+              <div class="detail-label">How to progress</div>
+              <div class="detail-hint">${ex.prog}</div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    });
+  });
+
+  html += `<div class="tip"><strong>Tip:</strong> ${d.tip}</div>`;
+  document.getElementById('panel').innerHTML = html;
+}
+
+buildTabs();
+renderDay();
+</script>
