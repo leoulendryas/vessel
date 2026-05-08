@@ -657,7 +657,8 @@ function renderEditor() {
               <input type="text" class="edit-input" value="${ex.sets}" onchange="updateExField(${di}, ${si}, ${ei}, 'sets', this.value)" placeholder="Sets (e.g. 3x10)">
               <input type="text" class="edit-input" value="${ex.rpe || ''}" onchange="updateExField(${di}, ${si}, ${ei}, 'rpe', this.value)" placeholder="RPE">
               <input type="number" class="edit-input" value="${ex.restSec}" onchange="updateExField(${di}, ${si}, ${ei}, 'restSec', this.value)" placeholder="Rest(s)">
-              <button class="rt-btn btn-sm btn-danger" onclick="removeExercise(${di}, ${si}, ${ei})">✕</button>
+              <input type="text" class="edit-input" value="${ex.prog || ''}" onchange="updateExField(${di}, ${si}, ${ei}, 'prog', this.value)" placeholder="How to progress">
+              <button class="rt-btn btn-sm btn-remove" onclick="removeExercise(${di}, ${si}, ${ei})">✕</button>
             </div>
           `).join('')
         ).join('')}

@@ -1040,10 +1040,19 @@ select {
   border-bottom: 1px solid var(--border);
 }
 
+.user-bar > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .logout-btn {
   color: var(--danger);
   cursor: pointer;
   opacity: 0.7;
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .logout-btn:hover { opacity: 1; }
@@ -1125,13 +1134,13 @@ select {
 
 .edit-ex-row {
   display: grid;
-  grid-template-columns: 1.5fr 80px 80px 80px 40px;
+  grid-template-columns: 1.5fr 80px 80px 80px 1.5fr 40px;
   gap: 8px;
   margin-bottom: 8px;
   align-items: center;
 }
 
-.edit-ex-row .btn-danger {
+.edit-ex-row .btn-remove {
   padding: 4px;
   display: flex;
   align-items: center;
@@ -1147,6 +1156,18 @@ select {
 .btn-danger {
   background: var(--danger);
   color: white;
+}
+
+.btn-remove {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  transition: all 0.15s;
+}
+
+.btn-remove:hover {
+  border-color: var(--text2);
+  color: var(--text);
 }
 
 .btn-outline {
