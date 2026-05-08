@@ -138,8 +138,8 @@ async function showApp(user) {
 
 async function loadUserProgram() {
   try {
-    const { data, error } = await sb.from('user_programs').select('program_data').single();
-    if (!error) userProgram = data.program_data;
+    const { data, error } = await sb.from('user_programs').select('program_data').maybeSingle();
+    if (!error && data) userProgram = data.program_data;
   } catch (err) { console.error(err); }
 }
 

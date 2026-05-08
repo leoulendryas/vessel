@@ -154,19 +154,22 @@ async function showApp(user) {
 
 async function loadUserProgram() {
   try {
-    const { data, error } = await sb.from('user_programs').select('program_data').single();
+    // maybeSingle returns null data without a PGRST116 error if no row exists
+    const { data, error } = await sb.from('user_programs').select('program_data').maybeSingle();
+    
+    if (error) throw error;
 
-    if (error && error.code === 'PGRST116') {
+    if (!data) {
+      // First time user: initialize with default program
       userProgram = JSON.parse(JSON.stringify(PROGRAM));
-      await sb.from('user_programs').insert({ program_data: userProgram });
-    } else if (error) {
-      throw error;
+      const { error: insError } = await sb.from('user_programs').insert({ program_data: userProgram });
+      if (insError) console.error("Initial save failed", insError);
     } else {
       userProgram = data.program_data;
     }
   } catch (err) {
     console.error("Failed to load program", err);
-    userProgram = PROGRAM;
+    userProgram = PROGRAM; // Final fallback
   }
 }
 
