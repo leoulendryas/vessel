@@ -1,15 +1,16 @@
 const CACHE_NAME = 'vessel-pwa-v5';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/stats.html',
-  '/style.css',
-  '/app.js',
-  '/stats.js',
-  '/manifest.json',
-  '/icons/icon-512.png',
-  '/screenshots/mobile.png',
-  '/screenshots/desktop.png'
+  './',
+  'index.html',
+  'stats.html',
+  'style.css',
+  'app.js',
+  'stats.js',
+  'manifest.json',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+  'screenshots/mobile.png',
+  'screenshots/desktop.png'
 ];
 
 self.addEventListener('install', (e) => {
