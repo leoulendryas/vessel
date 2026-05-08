@@ -988,6 +988,14 @@ select {
   transition: all 0.2s;
 }
 
+.pass-msg {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 6px;
+  min-height: 16px;
+  transition: all 0.2s;
+}
+
 .auth-btn {
   background: var(--accent);
   color: var(--accent-text);

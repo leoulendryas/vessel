@@ -49,15 +49,27 @@ function initSupabase() {
 function setupAuthListeners() {
   const passInput = document.getElementById('auth-pass');
   const emoji = document.getElementById('pass-emoji');
-  if (!passInput || !emoji) return;
+  const msg = document.getElementById('pass-msg');
+  if (!passInput || !emoji || !msg) return;
   
   passInput.addEventListener('input', (e) => {
     const len = e.target.value.length;
-    if (len === 0) emoji.innerText = '🤔';
-    else if (len < 4) emoji.innerText = '🤨';
-    else if (len < 8) emoji.innerText = '😊';
-    else if (len < 12) emoji.innerText = '😎';
-    else emoji.innerText = '🤯';
+    if (len === 0) {
+      emoji.innerText = '🤔';
+      msg.innerText = 'Speak, friend, and enter.';
+    } else if (len < 4) {
+      emoji.innerText = '🤨';
+      msg.innerText = 'Is that even a word? 🧐';
+    } else if (len < 8) {
+      emoji.innerText = '😊';
+      msg.innerText = 'Getting warmer... 🔥';
+    } else if (len < 12) {
+      emoji.innerText = '😎';
+      msg.innerText = 'Now that\'s a vessel! 🚢';
+    } else {
+      emoji.innerText = '🤯';
+      msg.innerText = 'Basically a fortress. 🏰';
+    }
   });
 
   document.getElementById('auth-form').addEventListener('submit', handleAuthSubmit);
