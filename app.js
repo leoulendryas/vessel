@@ -739,11 +739,26 @@ function renderEditor() {
         ${day.sections.map((sec, si) => 
           sec.exercises.map((ex, ei) => `
             <div class="edit-ex-row">
-              <input type="text" class="edit-input" value="${ex.name}" onchange="updateExField(${di}, ${si}, ${ei}, 'name', this.value)" placeholder="Exercise Name">
-              <input type="text" class="edit-input" value="${ex.sets}" onchange="updateExField(${di}, ${si}, ${ei}, 'sets', this.value)" placeholder="Sets (e.g. 3x10)">
-              <input type="text" class="edit-input" value="${ex.rpe || ''}" onchange="updateExField(${di}, ${si}, ${ei}, 'rpe', this.value)" placeholder="RPE">
-              <input type="number" class="edit-input" value="${ex.restSec}" onchange="updateExField(${di}, ${si}, ${ei}, 'restSec', this.value)" placeholder="Rest(s)">
-              <input type="text" class="edit-input" value="${ex.prog || ''}" onchange="updateExField(${di}, ${si}, ${ei}, 'prog', this.value)" placeholder="How to progress">
+              <div class="edit-ex-field">
+                <label class="mobile-only">Exercise Name</label>
+                <input type="text" class="edit-input" value="${ex.name}" onchange="updateExField(${di}, ${si}, ${ei}, 'name', this.value)" placeholder="Exercise Name">
+              </div>
+              <div class="edit-ex-field">
+                <label class="mobile-only">Sets</label>
+                <input type="text" class="edit-input" value="${ex.sets}" onchange="updateExField(${di}, ${si}, ${ei}, 'sets', this.value)" placeholder="Sets (e.g. 3x10)">
+              </div>
+              <div class="edit-ex-field">
+                <label class="mobile-only">RPE</label>
+                <input type="text" class="edit-input" value="${ex.rpe || ''}" onchange="updateExField(${di}, ${si}, ${ei}, 'rpe', this.value)" placeholder="RPE">
+              </div>
+              <div class="edit-ex-field">
+                <label class="mobile-only">Rest (s)</label>
+                <input type="number" class="edit-input" value="${ex.restSec}" onchange="updateExField(${di}, ${si}, ${ei}, 'restSec', this.value)" placeholder="Rest(s)">
+              </div>
+              <div class="edit-ex-field">
+                <label class="mobile-only">Progression</label>
+                <input type="text" class="edit-input" value="${ex.prog || ''}" onchange="updateExField(${di}, ${si}, ${ei}, 'prog', this.value)" placeholder="How to progress">
+              </div>
               <button class="rt-btn btn-sm btn-remove" onclick="removeExercise(${di}, ${si}, ${ei})">✕</button>
             </div>
           `).join('')

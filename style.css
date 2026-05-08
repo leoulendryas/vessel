@@ -1147,6 +1147,14 @@ select {
   justify-content: center;
 }
 
+.edit-ex-field {
+  display: contents;
+}
+
+.mobile-only {
+  display: none;
+}
+
 .edit-ex-header {
   display: grid;
   grid-template-columns: 1.5fr 80px 80px 80px 1.5fr 40px;
@@ -1219,6 +1227,20 @@ select {
     border-radius: var(--radius-sm);
     margin-bottom: 20px;
     border: 1px solid var(--border2);
+  }
+
+  .edit-ex-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .mobile-only {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-weight: 700;
   }
 
   .edit-ex-row input {
