@@ -46,16 +46,16 @@ function setupAuthListeners() {
   
   passInput.addEventListener('input', (e) => {
     const len = e.target.value.length;
-    if (len === 0) {
+    if (len < 2) {
       emoji.innerText = '🤔';
       msg.innerText = 'Just type something. Or don\'t. I\'m a sign, not a cop.';
-    } else if (len < 4) {
+    } else if (len < 5) {
       emoji.innerText = '🤨';
       msg.innerText = 'Yeah, that\'s probably enough effort.';
-    } else if (len < 8) {
+    } else if (len < 7) {
       emoji.innerText = '😊';
       msg.innerText = 'Wow, you\'re really overthinking this.';
-    } else if (len < 12) {
+    } else if (len < 10) {
       emoji.innerText = '😎';
       msg.innerText = 'Okay, Mr. Cybersecurity. We get it.';
     } else {
