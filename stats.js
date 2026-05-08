@@ -453,6 +453,7 @@ function formatDateShort(dateStr) {
 }
 
 function getDayLabel(dayId) {
-  const day = PROGRAM.days.find(d => d.id === dayId);
+  const prog = userProgram || PROGRAM;
+  const day = prog.days.find(d => d.id === dayId);
   return day ? day.label : 'Workout';
 }

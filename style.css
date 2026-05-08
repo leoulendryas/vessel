@@ -1125,9 +1125,17 @@ select {
 
 .edit-ex-row {
   display: grid;
-  grid-template-columns: 1fr 80px 80px;
+  grid-template-columns: 1.5fr 80px 80px 80px 40px;
   gap: 8px;
   margin-bottom: 8px;
+  align-items: center;
+}
+
+.edit-ex-row .btn-danger {
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-sm {

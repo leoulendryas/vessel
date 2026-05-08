@@ -114,7 +114,6 @@ async function handleAuthSubmit(e) {
     if (authMode === 'signup' && !result.data.session) {
       showToast("Check your email for a confirmation link! 📧", "success");
       btn.innerText = "Check your email!";
-      // Stay on screen so they can read it
     } else {
       await showApp(result.data.user);
     }
@@ -154,13 +153,11 @@ async function showApp(user) {
 
 async function loadUserProgram() {
   try {
-    // maybeSingle returns null data without a PGRST116 error if no row exists
     const { data, error } = await sb.from('user_programs').select('program_data').maybeSingle();
     
     if (error) throw error;
 
     if (!data) {
-      // First time user: initialize with default program
       userProgram = JSON.parse(JSON.stringify(PROGRAM));
       const { error: insError } = await sb.from('user_programs').insert({ program_data: userProgram });
       if (insError) console.error("Initial save failed", insError);
@@ -169,7 +166,7 @@ async function loadUserProgram() {
     }
   } catch (err) {
     console.error("Failed to load program", err);
-    userProgram = PROGRAM; // Final fallback
+    userProgram = PROGRAM;
   }
 }
 
@@ -207,12 +204,12 @@ function renderDay() {
   let html = `
     <div class="day-title">${day.title}</div>
     <div class="badge-row">
-      ${day.badges.map(b => `<div class="badge">${b}</div>`).join('')}
+      ${(day.badges || []).map(b => `<div class="badge">${b}</div>`).join('')}
     </div>
   `;
 
   day.sections.forEach(sec => {
-    html += `<div class="sec-label">${sec.label}</div>`;
+    if (sec.label) html += `<div class="sec-label">${sec.label}</div>`;
     sec.exercises.forEach(ex => {
       const isOpen = openExId === ex.id;
       html += `
@@ -220,11 +217,11 @@ function renderDay() {
           <div class="ex-header" onclick="toggleEx('${ex.id}')">
             <div class="ex-info">
               <div class="ex-name">${ex.name}</div>
-              <div class="ex-note">${ex.note}</div>
+              <div class="ex-note">${ex.note || ''}</div>
             </div>
             <div class="ex-meta">
               <div class="pill pill-sets">${ex.sets}</div>
-              <div class="pill">${ex.rpe}</div>
+              <div class="pill">${ex.rpe || 'RPE -'}</div>
               <div class="chevron">▾</div>
             </div>
           </div>
@@ -236,17 +233,19 @@ function renderDay() {
     });
   });
 
-  html += `
-    <div class="tip-box">
-      <strong>Tip:</strong> ${day.tip}
-    </div>
-  `;
+  if (day.tip) {
+    html += `
+      <div class="tip-box">
+        <strong>Tip:</strong> ${day.tip}
+      </div>
+    `;
+  }
 
   panel.innerHTML = html;
 
   if (openExId) {
     const ex = findEx(openExId);
-    loadAndRenderLogs(ex);
+    if (ex) loadAndRenderLogs(ex);
   }
 }
 
@@ -260,7 +259,7 @@ function renderExDetail(ex) {
       </div>
       <div class="detail-card">
         <div class="dc-label">How to progress</div>
-        <div class="dc-val">${ex.prog}</div>
+        <div class="dc-val">${ex.prog || 'Add weight or reps when possible.'}</div>
       </div>
     </div>
 
@@ -345,8 +344,9 @@ function renderBubbles(ex) {
   const doneSet = completedSets[ex.id] || new Set();
   let firstUndone = -1;
   let html = '';
+  const numSets = parseInt(ex.numSets) || parseInt(ex.sets.split('×')[0]) || 3;
 
-  for (let i = 1; i <= ex.numSets; i++) {
+  for (let i = 1; i <= numSets; i++) {
     const isDone = doneSet.has(i);
     if (!isDone && firstUndone === -1) firstUndone = i;
     
@@ -363,9 +363,10 @@ function renderBubbles(ex) {
 function renderProgressText(ex) {
   const doneSet = completedSets[ex.id] || new Set();
   const count = doneSet.size;
+  const numSets = parseInt(ex.numSets) || parseInt(ex.sets.split('×')[0]) || 3;
   if (count === 0) return 'Tap a bubble when you finish a set';
-  if (count === ex.numSets) return '🎯 All sets done! Great work.';
-  return `<span>${count}</span> / ${ex.numSets} sets done`;
+  if (count >= numSets) return '🎯 All sets done! Great work.';
+  return `<span>${count}</span> / ${numSets} sets done`;
 }
 
 function toggleSet(exId, setNum, restSec) {
@@ -373,7 +374,7 @@ function toggleSet(exId, setNum, restSec) {
   const doneSet = completedSets[exId];
 
   if (doneSet.has(setNum)) {
-    for (let i = setNum; i <= 10; i++) doneSet.delete(i);
+    for (let i = setNum; i <= 20; i++) doneSet.delete(i);
     stopTimer(true);
   } else {
     doneSet.add(setNum);
@@ -401,8 +402,10 @@ function startTimer(exId, total) {
   if (timerEl) timerEl.classList.add('visible');
   
   const floatEl = document.getElementById('float-timer');
-  floatEl.classList.remove('done');
-  floatEl.classList.add('show');
+  if (floatEl) {
+    floatEl.classList.remove('done');
+    floatEl.classList.add('show');
+  }
 
   updateTimerUI();
 
@@ -420,15 +423,17 @@ function startTimer(exId, total) {
 function updateTimerUI() {
   const { seconds, total, exId } = timer;
   const formatted = formatTime(seconds);
-  const percent = ((total - seconds) / total) * 100;
+  const percent = total > 0 ? ((total - seconds) / total) * 100 : 0;
 
   const countEl = document.getElementById(`count-${exId}`);
   const fillEl = document.getElementById(`fill-${exId}`);
   if (countEl) countEl.innerText = formatted;
   if (fillEl) fillEl.style.width = `${percent}%`;
 
-  document.getElementById('ft-time').innerText = formatted;
-  document.getElementById('ft-fill').style.width = `${percent}%`;
+  const ftTime = document.getElementById('ft-time');
+  const ftFill = document.getElementById('ft-fill');
+  if (ftTime) ftTime.innerText = formatted;
+  if (ftFill) ftFill.style.width = `${percent}%`;
 }
 
 function formatTime(s) {
@@ -451,12 +456,15 @@ function handleTimerEnd() {
     if (countEl) countEl.innerText = "Go! 🔥";
   }
   
-  floatEl.classList.add('done');
-  document.getElementById('ft-time').innerText = "Go! 🔥";
+  if (floatEl) {
+    floatEl.classList.add('done');
+    const ftTime = document.getElementById('ft-time');
+    if (ftTime) ftTime.innerText = "Go! 🔥";
 
-  setTimeout(() => {
-    if (!timer.running) floatEl.classList.remove('show');
-  }, 5000);
+    setTimeout(() => {
+      if (!timer.running) floatEl.classList.remove('show');
+    }, 5000);
+  }
 }
 
 function stopTimer(hideFloat) {
@@ -471,8 +479,9 @@ function stopTimer(hideFloat) {
     }
   }
 
-  if (hideFloat) {
-    document.getElementById('float-timer').classList.remove('show');
+  const floatEl = document.getElementById('float-timer');
+  if (hideFloat && floatEl) {
+    floatEl.classList.remove('show');
   }
 }
 
@@ -626,15 +635,24 @@ function renderEditor() {
         <label>Full Title</label>
         <input type="text" class="edit-input" value="${day.title}" onchange="updateDayField(${di}, 'title', this.value)">
       </div>
+      <div class="edit-field">
+        <label>Day Tip (Leave empty to hide)</label>
+        <textarea class="edit-input" onchange="updateDayField(${di}, 'tip', this.value)" rows="2">${day.tip || ''}</textarea>
+      </div>
       
       <div style="margin-top:16px;">
-        <div class="st-label">Exercises</div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div class="st-label" style="margin:0;">Exercises</div>
+          <button class="rt-btn btn-sm" onclick="addExercise(${di})">+ Add Exercise</button>
+        </div>
         ${day.sections.map((sec, si) => 
           sec.exercises.map((ex, ei) => `
             <div class="edit-ex-row">
-              <input type="text" class="edit-input" value="${ex.name}" onchange="updateExField(${di}, ${si}, ${ei}, 'name', this.value)">
-              <input type="text" class="edit-input" value="${ex.sets}" onchange="updateExField(${di}, ${si}, ${ei}, 'sets', this.value)" placeholder="Sets">
+              <input type="text" class="edit-input" value="${ex.name}" onchange="updateExField(${di}, ${si}, ${ei}, 'name', this.value)" placeholder="Exercise Name">
+              <input type="text" class="edit-input" value="${ex.sets}" onchange="updateExField(${di}, ${si}, ${ei}, 'sets', this.value)" placeholder="Sets (e.g. 3x10)">
+              <input type="text" class="edit-input" value="${ex.rpe || ''}" onchange="updateExField(${di}, ${si}, ${ei}, 'rpe', this.value)" placeholder="RPE">
               <input type="number" class="edit-input" value="${ex.restSec}" onchange="updateExField(${di}, ${si}, ${ei}, 'restSec', this.value)" placeholder="Rest(s)">
+              <button class="rt-btn btn-sm btn-danger" onclick="removeExercise(${di}, ${si}, ${ei})">✕</button>
             </div>
           `).join('')
         ).join('')}
@@ -648,12 +666,33 @@ function updateDayField(di, field, val) {
 }
 
 function updateExField(di, si, ei, field, val) {
-  if (field === 'restSec') val = parseInt(val);
+  if (field === 'restSec') val = parseInt(val) || 60;
   userProgram.days[di].sections[si].exercises[ei][field] = val;
-  // Also update 'rest' display string if restSec changed
   if (field === 'restSec') {
     userProgram.days[di].sections[si].exercises[ei].rest = `${val}s`;
   }
+}
+
+function addExercise(di) {
+  const newEx = {
+    id: 'ex-' + Date.now(),
+    name: 'New Exercise',
+    sets: '3 × 10',
+    numSets: 3,
+    rpe: 'RPE 7',
+    rest: '60s',
+    restSec: 60,
+    prog: 'Add weight when possible.'
+  };
+  // Default to first section or create one
+  if (!userProgram.days[di].sections) userProgram.days[di].sections = [{ label: 'Exercises', exercises: [] }];
+  userProgram.days[di].sections[0].exercises.push(newEx);
+  renderEditor();
+}
+
+function removeExercise(di, si, ei) {
+  userProgram.days[di].sections[si].exercises.splice(ei, 1);
+  renderEditor();
 }
 
 async function saveProgram() {
