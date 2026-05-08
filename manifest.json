@@ -1,0 +1,21 @@
+{
+  "name": "vessel — Gym Tracker",
+  "short_name": "vessel",
+  "description": "Personal gym tracker and progression engine.",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0C0C0C",
+  "theme_color": "#CCFF00",
+  "icons": [
+    {
+      "src": "https://fav.farm/🚢",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://fav.farm/🚢",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
