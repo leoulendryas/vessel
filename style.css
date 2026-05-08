@@ -1122,8 +1122,8 @@ select {
 }
 
 .btn-sm {
-  font-size: 12px;
-  padding: 6px 12px;
+  font-size: 11px;
+  padding: 4px 10px;
   height: auto;
 }
 
@@ -1228,14 +1228,23 @@ select {
 }
 
 .ec-remove {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   background: var(--surface);
   border: 1px solid var(--border2);
   border-radius: 6px;
-  color: var(--text3);
+  color: var(--text3); /* Light gray */
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.ec-remove:hover {
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .ec-grid {
