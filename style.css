@@ -1197,41 +1197,107 @@ select {
   color: var(--text);
 }
 
+/* Responsive */
+@media (max-width: 640px) {
+  .edit-ex-header {
+    display: none;
+  }
+  
+  .edit-ex-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background: var(--surface);
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+  }
+  
+  .edit-ex-row input[placeholder="Exercise Name"],
+  .edit-ex-row input[placeholder="How to progress"] {
+    grid-column: span 2;
+  }
+  
+  .edit-ex-row .btn-remove {
+    grid-column: span 2;
+    padding: 8px;
+  }
+}
+
 @media (max-width: 520px) {
+  :root {
+    --nav-h: 52px;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  .container {
+    padding: 20px 14px 100px;
+  }
+
+  .day-title {
+    font-size: 18px;
+  }
+
+  .panel {
+    padding: 16px 16px 8px;
+  }
+
   .detail-grid {
     grid-template-columns: 1fr;
   }
   
   .stats-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .sc-val {
+    font-size: 24px;
   }
   
   .wl-form {
     flex-direction: column;
     align-items: stretch;
+    gap: 16px;
   }
   
-  .wl-form input, .wl-submit {
+  .wl-field {
     width: 100%;
   }
-  
-  .day-title {
-    font-size: 17px;
+
+  .wl-form input, .wl-submit {
+    width: 100%;
+    height: 44px; /* Larger touch target */
   }
   
+  .set-bubble {
+    width: 48px; /* Larger touch target */
+    height: 48px;
+  }
+
   .float-timer {
-    padding: 8px 16px;
+    width: calc(100% - 28px);
+    border-radius: 16px;
+    justify-content: space-between;
   }
   
   .ft-progress-bg {
     display: none;
   }
-  
-  .container {
-    padding-left: 14px;
-    padding-right: 14px;
+
+  .modal {
+    max-height: 95vh;
   }
-}
-g-right: 14px;
+
+  .nav-logo {
+    font-size: 16px;
+  }
+
+  .nav-link {
+    padding: 6px 10px;
+    font-size: 13px;
   }
 }
