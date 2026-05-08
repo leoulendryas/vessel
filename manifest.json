@@ -1,5 +1,5 @@
 {
-  "id": "/?source=pwa_v3",
+  "id": "/?source=pwa_v4",
   "name": "vessel — Gym Tracker",
   "short_name": "vessel",
   "description": "Professional gym tracker and progression engine.",
@@ -10,30 +10,16 @@
   "theme_color": "#CCFF00",
   "icons": [
     {
-      "src": "/icons/icon-192.png",
-      "sizes": "192x192",
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "https://placehold.co/1080x1920/161616/CCFF00?text=vessel+Workout",
-      "sizes": "1080x1920",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "https://placehold.co/1920x1080/161616/CCFF00?text=vessel+Progress",
-      "sizes": "1920x1080",
-      "type": "image/png",
-      "form_factor": "wide"
+      "purpose": "maskable"
     }
   ]
 }
