@@ -643,6 +643,24 @@ const PROGRAM = {
           ]
         }
       ]
+    },
+    {
+      id: 'sat',
+      label: 'Sat',
+      tabName: 'Rest',
+      title: 'Saturday Rest',
+      badges: ['Rest day'],
+      tip: "Recovery is just as important as the work. Feed your muscles and rest up.",
+      sections: []
+    },
+    {
+      id: 'sun',
+      label: 'Sun',
+      tabName: 'Rest',
+      title: 'Sunday Rest',
+      badges: ['Rest day'],
+      tip: "Prep your meals and get ready for the week ahead.",
+      sections: []
     }
   ]
 };

@@ -139,7 +139,12 @@ async function showApp(user) {
 async function loadUserProgram() {
   try {
     const { data, error } = await sb.from('user_programs').select('program_data').maybeSingle();
-    if (!error && data) userProgram = data.program_data;
+    if (!error && data) {
+      userProgram = data.program_data;
+      if (userProgram.days.length < 7) {
+        userProgram.days.push(...JSON.parse(JSON.stringify(PROGRAM.days.slice(5))));
+      }
+    }
   } catch (err) { console.error(err); }
 }
 

@@ -163,6 +163,11 @@ async function loadUserProgram() {
       if (insError) console.error("Initial save failed", insError);
     } else {
       userProgram = data.program_data;
+      // Migration: Ensure Sat/Sun exist for older 5-day accounts
+      if (userProgram.days.length < 7) {
+        const weekend = PROGRAM.days.slice(5);
+        userProgram.days.push(...JSON.parse(JSON.stringify(weekend)));
+      }
     }
   } catch (err) {
     console.error("Failed to load program", err);
