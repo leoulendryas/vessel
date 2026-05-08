@@ -112,19 +112,25 @@ async function handleAuthSubmit(e) {
     if (result.error) throw result.error;
 
     if (authMode === 'signup' && !result.data.session) {
-      showToast("Check your email for confirmation!", "success");
+      showToast("Check your email for a confirmation link! 📧", "success");
+      btn.innerText = "Check your email!";
+      // Stay on screen so they can read it
     } else {
       await showApp(result.data.user);
     }
   } catch (err) {
     console.error(err);
-    const funErrors = [
-      "Wrong key! 🚫",
-      "Are you sure that's you? 🧐",
-      "The vessel is locked... for now. 🔒",
-      "Typo? Or just testing me? 😂"
-    ];
-    showToast(funErrors[Math.floor(Math.random() * funErrors.length)], "error");
+    if (err.message === 'Email not confirmed') {
+      showToast("Verification pending! Check your email. 📧", "error");
+    } else {
+      const funErrors = [
+        "Wrong key! 🚫",
+        "Are you sure that's you? 🧐",
+        "The vessel is locked... for now. 🔒",
+        "Typo? Or just testing me? 😂"
+      ];
+      showToast(funErrors[Math.floor(Math.random() * funErrors.length)], "error");
+    }
   } finally {
     btn.disabled = false;
     btn.innerText = authMode === 'login' ? "Enter vessel" : "Create Account";
