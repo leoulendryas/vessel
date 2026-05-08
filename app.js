@@ -448,6 +448,41 @@ function formatTime(s) {
   return m > 0 ? `${m}:${rs.toString().padStart(2, '0')}` : `${rs}s`;
 }
 
+let ringingInterval = null;
+
+function playBell() {
+  stopRinging(); // Ensure no double ringing
+  
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  
+  const ring = () => {
+    [261.63, 329.63, 392.00, 523.25].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const t = ctx.currentTime + i * 0.09;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.15, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+      osc.start(t);
+      osc.stop(t + 1.2);
+    });
+  };
+
+  ring();
+  ringingInterval = setInterval(ring, 2000); // Ring every 2 seconds
+}
+
+function stopRinging() {
+  if (ringingInterval) {
+    clearInterval(ringingInterval);
+    ringingInterval = null;
+  }
+}
+
 function handleTimerEnd() {
   playBell();
   
@@ -458,317 +493,53 @@ function handleTimerEnd() {
   if (timerEl) {
     timerEl.classList.add('done');
     const countEl = document.getElementById(`count-${exId}`);
-    if (countEl) countEl.innerText = "Go! 🔥";
+    if (countEl) countEl.innerText = "TIME'S UP! 🔔";
+    
+    // Change Skip to Stop Alarm
+    const btns = timerEl.querySelector('.rt-btns');
+    if (btns) {
+      btns.innerHTML = `
+        <button class="rt-btn btn-danger" style="background:var(--accent); color:var(--accent-text); border:none;" onclick="finalizeTimer()">STOP ALARM</button>
+      `;
+    }
   }
   
   if (floatEl) {
     floatEl.classList.add('done');
     const ftTime = document.getElementById('ft-time');
-    if (ftTime) ftTime.innerText = "Go! 🔥";
-
-    setTimeout(() => {
-      if (!timer.running) floatEl.classList.remove('show');
-    }, 5000);
+    if (ftTime) ftTime.innerText = "RINGING...";
+    floatEl.querySelector('button').innerText = "STOP";
+    floatEl.querySelector('button').onclick = finalizeTimer;
   }
 }
 
-function stopTimer(hideFloat) {
-  clearInterval(timer.interval);
-  timer.running = false;
+function finalizeTimer() {
+  stopRinging();
   
-  const oldExId = timer.exId;
-  if (oldExId) {
-    const timerEl = document.getElementById(`timer-${oldExId}`);
-    if (timerEl) {
-      timerEl.classList.remove('visible', 'done');
-    }
-  }
-
+  const { exId } = timer;
+  const timerEl = document.getElementById(`timer-${exId}`);
   const floatEl = document.getElementById('float-timer');
-  if (hideFloat && floatEl) {
-    floatEl.classList.remove('show');
-  }
-}
 
-function resetTimer(exId, total) {
-  startTimer(exId, total);
-}
-
-function buildFloatTimer() {
-  const el = document.createElement('div');
-  el.id = 'float-timer';
-  el.className = 'float-timer';
-  el.innerHTML = `
-    <div class="ft-label">Resting</div>
-    <div class="ft-time" id="ft-time">0:00</div>
-    <div class="ft-progress-bg">
-      <div class="ft-progress-fill" id="ft-fill"></div>
-    </div>
-    <button class="rt-btn" onclick="stopTimer(true)">Skip</button>
-  `;
-  document.body.appendChild(el);
-}
-
-// --- WEIGHT LOGGING ---
-
-async function handleLogSubmit(e, exId, exName) {
-  e.preventDefault();
-  const btn = document.getElementById(`btn-${exId}`);
-  const weightInput = document.getElementById(`log-w-${exId}`);
-  const repsInput = document.getElementById(`log-r-${exId}`);
-  
-  const weight = parseFloat(weightInput.value);
-  const reps = parseInt(repsInput.value);
-
-  if (!weight || weight <= 0) {
-    showToast("Please enter a valid weight", "error");
-    return;
-  }
-
-  btn.disabled = true;
-  btn.innerText = "Saving...";
-
-  const newLog = {
-    exercise_id: exId,
-    exercise_name: exName,
-    day_id: (userProgram || PROGRAM).days[activeDay].id,
-    weight,
-    reps,
-    date: new Date().toISOString().split('T')[0]
-  };
-
-  try {
-    if (sb) {
-      const { error } = await sb.from('logs').insert([newLog]);
-      if (error) throw error;
-    } else {
-      const logs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
-      logs.unshift({ ...newLog, id: Date.now().toString(), created_at: new Date().toISOString() });
-      localStorage.setItem('gymLogs', JSON.stringify(logs));
-    }
-
-    showToast("Logged! 💪", "success");
-    weightInput.value = "";
-    repsInput.value = "";
-    loadAndRenderLogs(findEx(exId));
-  } catch (err) {
-    console.error(err);
-    showToast("Error saving log", "error");
-  } finally {
-    btn.disabled = false;
-    btn.innerText = "Save";
-  }
-}
-
-async function loadAndRenderLogs(ex) {
-  const container = document.getElementById(`history-${ex.id}`);
-  if (!container) return;
-  let logs = [];
-
-  try {
-    if (sb) {
-      const { data, error } = await sb.from('logs')
-        .select('*')
-        .eq('exercise_id', ex.id)
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(8);
-      if (error) throw error;
-      logs = data;
-    } else {
-      const allLogs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
-      logs = allLogs.filter(l => l.exercise_id === ex.id).slice(0, 8);
-    }
-
-    if (logs.length === 0) {
-      container.innerHTML = '<div class="empty-state">No logs yet. Finish a set and save!</div>';
-      return;
-    }
-
-    container.innerHTML = logs.map((log, i) => {
-      const nextLog = logs[i + 1];
-      let diffHtml = '';
-      if (nextLog) {
-        const diff = (log.weight - nextLog.weight).toFixed(1);
-        const diffClass = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'neutral');
-        const sign = diff > 0 ? '+' : '';
-        diffHtml = `<span class="wl-diff ${diffClass}">${sign}${diff}kg</span>`;
-      }
-
-      return `
-        <div class="wl-entry">
-          <div class="wl-date">${formatDate(log.date)}</div>
-          <div class="wl-stats">
-            ${diffHtml}
-            <div class="wl-val">${log.weight}kg ${log.reps ? `× ${log.reps}` : ''}</div>
-          </div>
-        </div>
+  if (timerEl) {
+    document.getElementById(`count-${exId}`).innerText = "Go! 🔥";
+    // Restore buttons
+    const ex = findEx(exId);
+    const btns = timerEl.querySelector('.rt-btns');
+    if (btns) {
+      btns.innerHTML = `
+        <button class="rt-btn" onclick="resetTimer('${ex.id}', ${ex.restSec})">Reset</button>
+        <button class="rt-btn" onclick="stopTimer(true)">Skip</button>
       `;
-    }).join('');
-
-  } catch (err) {
-    container.innerHTML = '<div class="empty-state">Error loading logs</div>';
+    }
   }
-}
 
-// --- PROGRAM EDITOR ---
-
-function openProgramEditor() {
-  document.getElementById('editor-overlay').classList.remove('hidden');
-  renderEditor();
-}
-
-function closeProgramEditor() {
-  document.getElementById('editor-overlay').classList.add('hidden');
-}
-
-function renderEditor() {
-  const container = document.getElementById('editor-body');
-  const prog = userProgram || PROGRAM;
-
-  container.innerHTML = prog.days.map((day, di) => `
-    <div class="edit-day-card">
-      <div class="edit-field">
-        <label>Day Name (e.g. Mon)</label>
-        <input type="text" class="edit-input" value="${day.label}" onchange="updateDayField(${di}, 'label', this.value)">
-      </div>
-      <div class="edit-field">
-        <label>Split Name (e.g. Chest & Tris)</label>
-        <input type="text" class="edit-input" value="${day.tabName}" onchange="updateDayField(${di}, 'tabName', this.value)">
-      </div>
-      <div class="edit-field">
-        <label>Full Title</label>
-        <input type="text" class="edit-input" value="${day.title}" onchange="updateDayField(${di}, 'title', this.value)">
-      </div>
-      <div class="edit-field">
-        <label>Day Tip (Leave empty to hide)</label>
-        <textarea class="edit-input" onchange="updateDayField(${di}, 'tip', this.value)" rows="2">${day.tip || ''}</textarea>
-      </div>
-      
-      <div style="margin-top:16px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <div class="st-label" style="margin:0;">Exercises</div>
-          <button class="rt-btn btn-sm" onclick="addExercise(${di})">+ Add Exercise</button>
-        </div>
-        
-        <div class="edit-ex-header">
-          <span>Exercise Name</span>
-          <span>Sets</span>
-          <span>RPE</span>
-          <span>Rest(s)</span>
-          <span>Progression</span>
-          <span></span>
-        </div>
-
-        ${day.sections.map((sec, si) => 
-          sec.exercises.map((ex, ei) => `
-            <div class="edit-ex-row">
-              <input type="text" class="edit-input" value="${ex.name}" onchange="updateExField(${di}, ${si}, ${ei}, 'name', this.value)" placeholder="Exercise Name">
-              <input type="text" class="edit-input" value="${ex.sets}" onchange="updateExField(${di}, ${si}, ${ei}, 'sets', this.value)" placeholder="Sets (e.g. 3x10)">
-              <input type="text" class="edit-input" value="${ex.rpe || ''}" onchange="updateExField(${di}, ${si}, ${ei}, 'rpe', this.value)" placeholder="RPE">
-              <input type="number" class="edit-input" value="${ex.restSec}" onchange="updateExField(${di}, ${si}, ${ei}, 'restSec', this.value)" placeholder="Rest(s)">
-              <input type="text" class="edit-input" value="${ex.prog || ''}" onchange="updateExField(${di}, ${si}, ${ei}, 'prog', this.value)" placeholder="How to progress">
-              <button class="rt-btn btn-sm btn-remove" onclick="removeExercise(${di}, ${si}, ${ei})">✕</button>
-            </div>
-          `).join('')
-        ).join('')}
-      </div>
-    </div>
-  `).join('');
-}
-
-function updateDayField(di, field, val) {
-  userProgram.days[di][field] = val;
-}
-
-function updateExField(di, si, ei, field, val) {
-  if (field === 'restSec') val = parseInt(val) || 60;
-  userProgram.days[di].sections[si].exercises[ei][field] = val;
-  if (field === 'restSec') {
-    userProgram.days[di].sections[si].exercises[ei].rest = `${val}s`;
-  }
-}
-
-function addExercise(di) {
-  const newEx = {
-    id: 'ex-' + Date.now(),
-    name: 'New Exercise',
-    sets: '3 × 10',
-    numSets: 3,
-    rpe: 'RPE 7',
-    rest: '60s',
-    restSec: 60,
-    prog: 'Add weight when possible.'
-  };
-  // Default to first section or create one
-  if (!userProgram.days[di].sections) userProgram.days[di].sections = [{ label: 'Exercises', exercises: [] }];
-  userProgram.days[di].sections[0].exercises.push(newEx);
-  renderEditor();
-}
-
-function removeExercise(di, si, ei) {
-  userProgram.days[di].sections[si].exercises.splice(ei, 1);
-  renderEditor();
-}
-
-async function saveProgram() {
-  const btn = document.querySelector('.modal-footer .wl-submit');
-  btn.disabled = true;
-  btn.innerText = "Saving...";
-
-  try {
-    const { error } = await sb.from('user_programs')
-      .update({ program_data: userProgram })
-      .eq('user_id', (await sb.auth.getUser()).data.user.id);
+  if (floatEl) {
+    document.getElementById('ft-time').innerText = "Go! 🔥";
+    floatEl.querySelector('button').innerText = "Skip";
+    floatEl.querySelector('button').onclick = () => stopTimer(true);
     
-    if (error) throw error;
-    
-    showToast("Program updated! 🔥", "success");
-    closeProgramEditor();
-    renderTabs();
-    renderDay();
-  } catch (err) {
-    console.error(err);
-    showToast("Failed to save program", "error");
-  } finally {
-    btn.disabled = false;
-    btn.innerText = "Save Program";
-  }
-}
-
-// --- HELPERS ---
-
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-}
-
-function showToast(msg, type) {
-  const t = document.getElementById('toast');
-  if (!t) return;
-  t.innerText = msg;
-  t.className = `toast show ${type}`;
-  setTimeout(() => t.classList.remove('show'), 2800);
-}
-
-function playBell() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [261.63, 329.63, 392.00, 523.25].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const t = ctx.currentTime + i * 0.09;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.22, t + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 2.6);
-      osc.start(t);
-      osc.stop(t + 2.6);
-    });
-  } catch (e) {
-    console.warn("Audio blocked");
+    setTimeout(() => {
+      if (!timer.running && !ringingInterval) floatEl.classList.remove('show');
+    }, 5000);
   }
 }
