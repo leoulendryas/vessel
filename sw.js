@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vessel-pwa-v1';
+const CACHE_NAME = 'vessel-pwa-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -6,17 +6,22 @@ const ASSETS = [
   '/style.css',
   '/app.js',
   '/stats.js',
-  '/manifest.json',
+  '/manifest.webmanifest',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
 
 self.addEventListener('install', (e) => {
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return Promise.allSettled(ASSETS.map(url => cache.add(url)));
     })
   );
+});
+
+self.addEventListener('activate', (e) => {
+  e.waitUntil(clients.claim());
 });
 
 self.addEventListener('fetch', (e) => {
