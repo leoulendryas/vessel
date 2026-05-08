@@ -16,11 +16,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSupabase();
   buildFloatTimer();
   
-  // Register PWA Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed', err));
-  }
-
   if (sb) {
     const { data: { user } } = await sb.auth.getUser();
     if (!user) {
