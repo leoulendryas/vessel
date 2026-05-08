@@ -1147,6 +1147,22 @@ select {
   justify-content: center;
 }
 
+.edit-ex-header {
+  display: grid;
+  grid-template-columns: 1.5fr 80px 80px 80px 1.5fr 40px;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding: 0 4px;
+}
+
+.edit-ex-header span {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--text3);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
 .btn-sm {
   font-size: 12px;
   padding: 6px 12px;

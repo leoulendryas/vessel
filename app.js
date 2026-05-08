@@ -650,6 +650,16 @@ function renderEditor() {
           <div class="st-label" style="margin:0;">Exercises</div>
           <button class="rt-btn btn-sm" onclick="addExercise(${di})">+ Add Exercise</button>
         </div>
+        
+        <div class="edit-ex-header">
+          <span>Exercise Name</span>
+          <span>Sets</span>
+          <span>RPE</span>
+          <span>Rest(s)</span>
+          <span>Progression</span>
+          <span></span>
+        </div>
+
         ${day.sections.map((sec, si) => 
           sec.exercises.map((ex, ei) => `
             <div class="edit-ex-row">
