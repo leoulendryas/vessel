@@ -7,14 +7,30 @@ let activeDay = 0;
 let openExId = null;
 let completedSets = {}; // { [exId]: Set<number> }
 let timer = { running: false, exId: null, seconds: 0, total: 0, interval: null };
+let authMode = 'login'; // or 'signup'
+let userProgram = null;
 
 // --- INITIALIZATION ---
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initSupabase();
   buildFloatTimer();
-  renderTabs();
-  renderDay();
+  
+  if (sb) {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) {
+      showAuth();
+    } else {
+      await showApp(user);
+    }
+  } else {
+    // If no SB, fallback to static app
+    userProgram = PROGRAM;
+    renderTabs();
+    renderDay();
+  }
+
+  setupAuthListeners();
 });
 
 function initSupabase() {
@@ -24,25 +40,129 @@ function initSupabase() {
       sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     } catch (e) {
       console.error("Supabase init failed", e);
-      showLocalBanner();
     }
-  } else {
-    showLocalBanner();
   }
 }
 
-function showLocalBanner() {
-  const banner = document.createElement('div');
-  banner.className = 'sb-banner';
-  banner.innerHTML = '⚠️ Supabase not configured — using local storage. Edit config.js to sync data.';
-  document.body.prepend(banner);
+// --- AUTH LOGIC ---
+
+function setupAuthListeners() {
+  const passInput = document.getElementById('auth-pass');
+  const emoji = document.getElementById('pass-emoji');
+  if (!passInput || !emoji) return;
+  
+  passInput.addEventListener('input', (e) => {
+    const len = e.target.value.length;
+    if (len === 0) emoji.innerText = '🤔';
+    else if (len < 4) emoji.innerText = '🤨';
+    else if (len < 8) emoji.innerText = '😊';
+    else if (len < 12) emoji.innerText = '😎';
+    else emoji.innerText = '🤯';
+  });
+
+  document.getElementById('auth-form').addEventListener('submit', handleAuthSubmit);
+}
+
+function toggleAuthMode() {
+  authMode = authMode === 'login' ? 'signup' : 'login';
+  const sub = document.getElementById('auth-sub');
+  const btn = document.getElementById('auth-submit-btn');
+  const switchText = document.getElementById('auth-switch-text');
+
+  if (authMode === 'signup') {
+    sub.innerText = "Join the vessel community.";
+    btn.innerText = "Create Account";
+    switchText.innerHTML = 'Already have an account? <span onclick="toggleAuthMode()">Login</span>';
+  } else {
+    sub.innerText = "Forge your discipline.";
+    btn.innerText = "Enter vessel";
+    switchText.innerHTML = 'New here? <span onclick="toggleAuthMode()">Create an account</span>';
+  }
+}
+
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+  const email = document.getElementById('auth-email').value;
+  const password = document.getElementById('auth-pass').value;
+  const btn = document.getElementById('auth-submit-btn');
+
+  btn.disabled = true;
+  btn.innerText = authMode === 'login' ? "Entering..." : "Creating...";
+
+  try {
+    let result;
+    if (authMode === 'login') {
+      result = await sb.auth.signInWithPassword({ email, password });
+    } else {
+      result = await sb.auth.signUp({ email, password });
+    }
+
+    if (result.error) throw result.error;
+
+    if (authMode === 'signup' && !result.data.session) {
+      showToast("Check your email for confirmation!", "success");
+    } else {
+      await showApp(result.data.user);
+    }
+  } catch (err) {
+    console.error(err);
+    const funErrors = [
+      "Wrong key! 🚫",
+      "Are you sure that's you? 🧐",
+      "The vessel is locked... for now. 🔒",
+      "Typo? Or just testing me? 😂"
+    ];
+    showToast(funErrors[Math.floor(Math.random() * funErrors.length)], "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerText = authMode === 'login' ? "Enter vessel" : "Create Account";
+  }
+}
+
+function showAuth() {
+  document.getElementById('auth-overlay').classList.remove('hidden');
+  document.getElementById('user-bar').classList.add('hidden');
+}
+
+async function showApp(user) {
+  document.getElementById('auth-overlay').classList.add('hidden');
+  document.getElementById('user-bar').classList.remove('hidden');
+  document.getElementById('user-email').innerText = user.email;
+
+  await loadUserProgram();
+  renderTabs();
+  renderDay();
+}
+
+async function loadUserProgram() {
+  try {
+    const { data, error } = await sb.from('user_programs').select('program_data').single();
+
+    if (error && error.code === 'PGRST116') {
+      userProgram = JSON.parse(JSON.stringify(PROGRAM));
+      await sb.from('user_programs').insert({ program_data: userProgram });
+    } else if (error) {
+      throw error;
+    } else {
+      userProgram = data.program_data;
+    }
+  } catch (err) {
+    console.error("Failed to load program", err);
+    userProgram = PROGRAM;
+  }
+}
+
+async function handleLogout() {
+  await sb.auth.signOut();
+  location.reload();
 }
 
 // --- RENDERING ---
 
 function renderTabs() {
   const container = document.getElementById('day-tabs');
-  container.innerHTML = PROGRAM.days.map((day, i) => `
+  const prog = userProgram || PROGRAM;
+  container.innerHTML = prog.days.map((day, i) => `
     <div class="day-tab ${activeDay === i ? 'active' : ''}" onclick="switchDay(${i})">
       <div class="tab-label">${day.label}</div>
       <div class="tab-name">${day.tabName}</div>
@@ -59,7 +179,8 @@ function switchDay(index) {
 }
 
 function renderDay() {
-  const day = PROGRAM.days[activeDay];
+  const prog = userProgram || PROGRAM;
+  const day = prog.days[activeDay];
   const panel = document.getElementById('panel');
 
   let html = `
@@ -104,7 +225,6 @@ function renderDay() {
 
   if (openExId) {
     const ex = findEx(openExId);
-    attachExListeners(ex);
     loadAndRenderLogs(ex);
   }
 }
@@ -181,13 +301,15 @@ function toggleEx(exId) {
   
   if (openExId) {
     setTimeout(() => {
-      document.getElementById(`ex-${exId}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const el = document.getElementById(`ex-${exId}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 60);
   }
 }
 
 function findEx(id) {
-  for (const day of PROGRAM.days) {
+  const prog = userProgram || PROGRAM;
+  for (const day of prog.days) {
     for (const sec of day.sections) {
       const ex = sec.exercises.find(e => e.id === id);
       if (ex) return ex;
@@ -230,18 +352,18 @@ function toggleSet(exId, setNum, restSec) {
   const doneSet = completedSets[exId];
 
   if (doneSet.has(setNum)) {
-    // Un-completing a set removes all sets after it
     for (let i = setNum; i <= 10; i++) doneSet.delete(i);
     stopTimer(true);
   } else {
-    // Completing a set
     doneSet.add(setNum);
     startTimer(exId, restSec);
   }
 
   const ex = findEx(exId);
-  document.getElementById(`bubbles-${exId}`).innerHTML = renderBubbles(ex);
-  document.getElementById(`progress-text-${exId}`).innerHTML = renderProgressText(ex);
+  const bubbleCont = document.getElementById(`bubbles-${exId}`);
+  const progCont = document.getElementById(`progress-text-${exId}`);
+  if (bubbleCont) bubbleCont.innerHTML = renderBubbles(ex);
+  if (progCont) progCont.innerHTML = renderProgressText(ex);
 }
 
 // --- TIMER LOGIC ---
@@ -279,13 +401,11 @@ function updateTimerUI() {
   const formatted = formatTime(seconds);
   const percent = ((total - seconds) / total) * 100;
 
-  // Inline timer
   const countEl = document.getElementById(`count-${exId}`);
   const fillEl = document.getElementById(`fill-${exId}`);
   if (countEl) countEl.innerText = formatted;
   if (fillEl) fillEl.style.width = `${percent}%`;
 
-  // Float timer
   document.getElementById('ft-time').innerText = formatted;
   document.getElementById('ft-fill').style.width = `${percent}%`;
 }
@@ -306,7 +426,8 @@ function handleTimerEnd() {
   
   if (timerEl) {
     timerEl.classList.add('done');
-    document.getElementById(`count-${exId}`).innerText = "Go! 🔥";
+    const countEl = document.getElementById(`count-${exId}`);
+    if (countEl) countEl.innerText = "Go! 🔥";
   }
   
   floatEl.classList.add('done');
@@ -375,7 +496,7 @@ async function handleLogSubmit(e, exId, exName) {
   const newLog = {
     exercise_id: exId,
     exercise_name: exName,
-    day_id: PROGRAM.days[activeDay].id,
+    day_id: (userProgram || PROGRAM).days[activeDay].id,
     weight,
     reps,
     date: new Date().toISOString().split('T')[0]
@@ -406,6 +527,7 @@ async function handleLogSubmit(e, exId, exName) {
 
 async function loadAndRenderLogs(ex) {
   const container = document.getElementById(`history-${ex.id}`);
+  if (!container) return;
   let logs = [];
 
   try {
@@ -454,6 +576,90 @@ async function loadAndRenderLogs(ex) {
   }
 }
 
+// --- PROGRAM EDITOR ---
+
+function openProgramEditor() {
+  document.getElementById('editor-overlay').classList.remove('hidden');
+  renderEditor();
+}
+
+function closeProgramEditor() {
+  document.getElementById('editor-overlay').classList.add('hidden');
+}
+
+function renderEditor() {
+  const container = document.getElementById('editor-body');
+  const prog = userProgram || PROGRAM;
+
+  container.innerHTML = prog.days.map((day, di) => `
+    <div class="edit-day-card">
+      <div class="edit-field">
+        <label>Day Name (e.g. Mon)</label>
+        <input type="text" class="edit-input" value="${day.label}" onchange="updateDayField(${di}, 'label', this.value)">
+      </div>
+      <div class="edit-field">
+        <label>Split Name (e.g. Chest & Tris)</label>
+        <input type="text" class="edit-input" value="${day.tabName}" onchange="updateDayField(${di}, 'tabName', this.value)">
+      </div>
+      <div class="edit-field">
+        <label>Full Title</label>
+        <input type="text" class="edit-input" value="${day.title}" onchange="updateDayField(${di}, 'title', this.value)">
+      </div>
+      
+      <div style="margin-top:16px;">
+        <div class="st-label">Exercises</div>
+        ${day.sections.map((sec, si) => 
+          sec.exercises.map((ex, ei) => `
+            <div class="edit-ex-row">
+              <input type="text" class="edit-input" value="${ex.name}" onchange="updateExField(${di}, ${si}, ${ei}, 'name', this.value)">
+              <input type="text" class="edit-input" value="${ex.sets}" onchange="updateExField(${di}, ${si}, ${ei}, 'sets', this.value)" placeholder="Sets">
+              <input type="number" class="edit-input" value="${ex.restSec}" onchange="updateExField(${di}, ${si}, ${ei}, 'restSec', this.value)" placeholder="Rest(s)">
+            </div>
+          `).join('')
+        ).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function updateDayField(di, field, val) {
+  userProgram.days[di][field] = val;
+}
+
+function updateExField(di, si, ei, field, val) {
+  if (field === 'restSec') val = parseInt(val);
+  userProgram.days[di].sections[si].exercises[ei][field] = val;
+  // Also update 'rest' display string if restSec changed
+  if (field === 'restSec') {
+    userProgram.days[di].sections[si].exercises[ei].rest = `${val}s`;
+  }
+}
+
+async function saveProgram() {
+  const btn = document.querySelector('.modal-footer .wl-submit');
+  btn.disabled = true;
+  btn.innerText = "Saving...";
+
+  try {
+    const { error } = await sb.from('user_programs')
+      .update({ program_data: userProgram })
+      .eq('user_id', (await sb.auth.getUser()).data.user.id);
+    
+    if (error) throw error;
+    
+    showToast("Program updated! 🔥", "success");
+    closeProgramEditor();
+    renderTabs();
+    renderDay();
+  } catch (err) {
+    console.error(err);
+    showToast("Failed to save program", "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerText = "Save Program";
+  }
+}
+
 // --- HELPERS ---
 
 function formatDate(dateStr) {
@@ -463,6 +669,7 @@ function formatDate(dateStr) {
 
 function showToast(msg, type) {
   const t = document.getElementById('toast');
+  if (!t) return;
   t.innerText = msg;
   t.className = `toast show ${type}`;
   setTimeout(() => t.classList.remove('show'), 2800);
@@ -488,8 +695,4 @@ function playBell() {
   } catch (e) {
     console.warn("Audio blocked");
   }
-}
-
-function attachExListeners(ex) {
-  // Use onclick in HTML for simplicity as specified
 }

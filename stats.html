@@ -7,6 +7,39 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="auth-overlay" class="auth-overlay hidden">
+    <div class="auth-card">
+      <div class="auth-logo">vessel</div>
+      <div class="auth-sub" id="auth-sub">Forge your discipline.</div>
+      
+      <form class="auth-form" id="auth-form">
+        <div class="auth-field">
+          <label>Email</label>
+          <input type="email" id="auth-email" class="auth-input" placeholder="you@example.com" required>
+        </div>
+        <div class="auth-field">
+          <label>Fun Password</label>
+          <div class="pass-wrapper">
+            <input type="password" id="auth-pass" class="auth-input" placeholder="••••••••" required>
+            <div class="pass-emoji" id="pass-emoji">🤔</div>
+          </div>
+        </div>
+        <button type="submit" class="auth-btn" id="auth-submit-btn">Enter vessel</button>
+      </form>
+
+      <div class="auth-switch" id="auth-switch-text">
+        New here? <span onclick="toggleAuthMode()">Create an account</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="user-bar" class="user-bar hidden">
+    <div id="user-email"></div>
+    <div style="display:flex; gap:12px;">
+      <div class="logout-btn" onclick="handleLogout()">Logout</div>
+    </div>
+  </div>
+
   <nav>
     <a href="index.html" class="nav-logo">vessel</a>
     <div class="nav-links">

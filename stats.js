@@ -5,10 +5,24 @@
 let sb = null;
 let allLogs = [];
 let chart = null;
+let authMode = 'login';
+let userProgram = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initSupabase();
-  loadAllData();
+  
+  if (sb) {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) {
+      showAuth();
+    } else {
+      await showApp(user);
+    }
+  } else {
+    loadAllData();
+  }
+
+  setupAuthListeners();
 });
 
 function initSupabase() {
@@ -21,6 +35,111 @@ function initSupabase() {
     }
   }
 }
+
+// --- AUTH (Copied from app.js for consistency) ---
+
+function setupAuthListeners() {
+  const passInput = document.getElementById('auth-pass');
+  const emoji = document.getElementById('pass-emoji');
+  if (!passInput || !emoji) return;
+  
+  passInput.addEventListener('input', (e) => {
+    const len = e.target.value.length;
+    if (len === 0) emoji.innerText = '🤔';
+    else if (len < 4) emoji.innerText = '🤨';
+    else if (len < 8) emoji.innerText = '😊';
+    else if (len < 12) emoji.innerText = '😎';
+    else emoji.innerText = '🤯';
+  });
+
+  document.getElementById('auth-form').addEventListener('submit', handleAuthSubmit);
+}
+
+function toggleAuthMode() {
+  authMode = authMode === 'login' ? 'signup' : 'login';
+  const sub = document.getElementById('auth-sub');
+  const btn = document.getElementById('auth-submit-btn');
+  const switchText = document.getElementById('auth-switch-text');
+
+  if (authMode === 'signup') {
+    sub.innerText = "Join the vessel community.";
+    btn.innerText = "Create Account";
+    switchText.innerHTML = 'Already have an account? <span onclick="toggleAuthMode()">Login</span>';
+  } else {
+    sub.innerText = "Forge your discipline.";
+    btn.innerText = "Enter vessel";
+    switchText.innerHTML = 'New here? <span onclick="toggleAuthMode()">Create an account</span>';
+  }
+}
+
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+  const email = document.getElementById('auth-email').value;
+  const password = document.getElementById('auth-pass').value;
+  const btn = document.getElementById('auth-submit-btn');
+
+  btn.disabled = true;
+  btn.innerText = authMode === 'login' ? "Entering..." : "Creating...";
+
+  try {
+    let result;
+    if (authMode === 'login') {
+      result = await sb.auth.signInWithPassword({ email, password });
+    } else {
+      result = await sb.auth.signUp({ email, password });
+    }
+
+    if (result.error) throw result.error;
+
+    if (authMode === 'signup' && !result.data.session) {
+      showToast("Check your email for confirmation!", "success");
+    } else {
+      await showApp(result.data.user);
+    }
+  } catch (err) {
+    console.error(err);
+    showToast("Login failed! 🧐", "error");
+  } finally {
+    btn.disabled = false;
+    btn.innerText = authMode === 'login' ? "Enter vessel" : "Create Account";
+  }
+}
+
+function showAuth() {
+  document.getElementById('auth-overlay').classList.remove('hidden');
+  document.getElementById('user-bar').classList.add('hidden');
+}
+
+async function showApp(user) {
+  document.getElementById('auth-overlay').classList.add('hidden');
+  document.getElementById('user-bar').classList.remove('hidden');
+  document.getElementById('user-email').innerText = user.email;
+
+  await loadUserProgram();
+  await loadAllData();
+}
+
+async function loadUserProgram() {
+  try {
+    const { data, error } = await sb.from('user_programs').select('program_data').single();
+    if (!error) userProgram = data.program_data;
+  } catch (err) { console.error(err); }
+}
+
+async function handleLogout() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.innerText = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// --- DATA LOADING ---
 
 async function loadAllData() {
   try {
