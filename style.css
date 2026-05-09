@@ -1122,9 +1122,9 @@ select {
 }
 
 .btn-sm {
-  font-size: 11px;
-  padding: 4px 10px;
-  height: auto;
+  font-size: 13px;
+  padding: 10px 18px;
+  height: 38px;
 }
 
 .btn-danger { background: var(--danger); color: white; }
@@ -1432,4 +1432,10 @@ select {
 
   .tip-box { font-size: 12px; padding: 10px 12px; }
   .sec-label { margin-top: 16px; }
+
+  .btn-sm {
+    font-size: 11px;
+    padding: 6px 12px;
+    height: auto;
+  }
 }

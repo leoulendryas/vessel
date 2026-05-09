@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vessel-pwa-v6';
+const CACHE_NAME = 'vessel-pwa-v8';
 const ASSETS = [
   './',
   'index.html',
@@ -13,21 +13,32 @@ const ASSETS = [
   'screenshots/desktop.png'
 ];
 
-self.addEventListener('install', (e) => {
+// 1. Force the new service worker to activate immediately
+self.addEventListener('install', (event) => {
   self.skipWaiting();
-  e.waitUntil(
+  event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return Promise.allSettled(ASSETS.map(url => cache.add(url)));
     })
   );
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(clients.claim());
+// 2. Take control of all pages immediately and cleanup old caches
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    Promise.all([
+      clients.claim(),
+      caches.keys().then((keys) => {
+        return Promise.all(
+          keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        );
+      })
+    ])
+  );
 });
 
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((res) => res || fetch(e.request))
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request).then((res) => res || fetch(event.request))
   );
 });
