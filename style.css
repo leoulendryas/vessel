@@ -966,7 +966,9 @@ select {
     text-align: center;
     font-size: 13px;
     white-space: normal;
+    transform: translateY(20px);
   }
+  .toast.show { transform: translateY(0); }
 
   /* Auth */
   .auth-overlay { align-items: flex-end; padding: 0; }
@@ -1033,6 +1035,8 @@ select {
   .sc-val     { font-size: 20px; }
   .sc-label   { font-size: 10px; }
   .chart-card, .pr-card, .volume-card, .recent-card { padding: 14px; }
+  #progChart { height: 200px !important; }
+  .chart-controls select { width: 100%; min-width: unset; }
   .page-title { font-size: 20px; }
   .tip-box { font-size: 12px; padding: 10px 12px; }
   .sec-label { margin-top: 16px; }

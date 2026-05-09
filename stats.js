@@ -296,8 +296,15 @@ function updateChart(exId) {
   });
 
   const sortedDates = Object.keys(grouped).sort();
-  const data = sortedDates.map(d => grouped[d]);
-  const labels = sortedDates.map(d => formatDateShort(d));
+  
+  // Mobile optimization: show only last 8 data points if on small screen
+  let finalDates = sortedDates;
+  if (window.innerWidth < 520 && sortedDates.length > 8) {
+    finalDates = sortedDates.slice(-8);
+  }
+
+  const data = finalDates.map(d => grouped[d]);
+  const labels = finalDates.map(d => formatDateShort(d));
 
   if (chart) chart.destroy();
 
@@ -320,15 +327,27 @@ function updateChart(exId) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { top: 5, bottom: 5 } },
       plugins: { legend: { display: false } },
       scales: {
         x: {
-          ticks: { color: '#444' },
-          grid: { color: 'rgba(255,255,255,0.04)' }
+          ticks: { 
+            color: '#777',
+            font: { size: 10 },
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 5 
+          },
+          grid: { color: 'rgba(255,255,255,0.03)', drawTicks: false }
         },
         y: {
-          ticks: { color: '#444' },
-          grid: { color: 'rgba(255,255,255,0.04)' }
+          ticks: { 
+            color: '#777',
+            font: { size: 10 },
+            padding: 8,
+            callback: (val) => val + 'kg'
+          },
+          grid: { color: 'rgba(255,255,255,0.03)', drawTicks: false }
         }
       }
     }
