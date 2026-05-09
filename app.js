@@ -201,6 +201,17 @@ function renderDay() {
       ${(day.badges || []).map(b => `<div class="badge">${b}</div>`).join('')}
     </div>
   `;
+
+  if (day.tip) {
+    html += `
+      <div class="tip-box">
+        <strong>Today's Tip:</strong> ${day.tip}
+      </div>
+    `;
+  }
+
+  html += `<div class="discovery-hint">Tap any exercise to see rest and progression</div>`;
+
   day.sections.forEach(sec => {
     if (sec.label) html += `<div class="sec-label">${sec.label}</div>`;
     sec.exercises.forEach(ex => {
@@ -225,13 +236,6 @@ function renderDay() {
       `;
     });
   });
-  if (day.tip) {
-    html += `
-      <div class="tip-box">
-        <strong>Tip:</strong> ${day.tip}
-      </div>
-    `;
-  }
   panel.innerHTML = html;
   if (openExId) {
     const ex = findEx(openExId);

@@ -428,6 +428,15 @@ nav {
   margin-top: 24px;
 }
 .tip-box strong { color: var(--text); }
+.discovery-hint {
+  font-size: 11px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  opacity: 0.8;
+}
 
 /* ════════════════════════════════
    STATS PAGE
