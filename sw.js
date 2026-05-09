@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vessel-pwa-v8';
+const CACHE_NAME = 'vessel-pwa-v9';
 const ASSETS = [
   './',
   'index.html',

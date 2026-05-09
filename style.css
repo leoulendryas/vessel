@@ -1371,6 +1371,7 @@ select {
     height: 46px;
     font-size: 14px;
   }
+  .wl-submit.btn-sm { width: auto; }
 
   /* Floating timer: full-width pill */
   .float-timer {
