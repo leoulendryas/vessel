@@ -663,77 +663,87 @@ function renderEditor() {
 
     <!-- Exercises -->
     <div class="editor-ex-header">
-      <div class="syne" style="font-size:14px; font-weight:800;">Exercises</div>
-      <button class="wl-submit btn-sm" onclick="addExercise(${editorActiveDay})">+ Add</button>
+      <div class="syne" style="font-size:14px; font-weight:800;">Workout Structure</div>
+      <button class="wl-submit btn-sm" onclick="addSection(${editorActiveDay})">+ Add Section</button>
     </div>
 
-    ${day.sections.map((sec, si) =>
-      sec.exercises.map((ex, ei) => `
-        <div class="edit-card">
-
-          <!-- Exercise name + remove -->
-          <div class="ec-row">
-            <input type="text" class="ec-name-input"
-              value="${ex.name}"
-              onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'name', this.value)"
-              placeholder="Exercise name">
-            <button class="ec-remove" onclick="removeExercise(${editorActiveDay}, ${si}, ${ei})">✕</button>
-          </div>
-
-          <!-- Subtitle / Note -->
-          <div class="ec-field">
-            <label>Subtitle / Note</label>
-            <input type="text"
-              value="${ex.note || ''}"
-              onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'note', this.value)"
-              placeholder="e.g. Main strength lift — go heavy">
-          </div>
-
-          <!-- Sets / RPE / Rest -->
-          <div class="ec-grid">
-            <div class="ec-field">
-              <label>Sets</label>
-              <input type="text"
-                value="${ex.sets}"
-                onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'sets', this.value)"
-                placeholder="e.g. 4 × 6">
-            </div>
-            <div class="ec-field">
-              <label>RPE</label>
-              <input type="text"
-                value="${ex.rpe || ''}"
-                onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'rpe', this.value)"
-                placeholder="e.g. RPE 8">
-            </div>
-            <div class="ec-field">
-              <label>Rest (s)</label>
-              <input type="number"
-                value="${ex.restSec}"
-                onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'restSec', this.value)">
-            </div>
-          </div>
-
-          <!-- Rest Hint -->
-          <div class="ec-field">
-            <label>Rest Hint</label>
-            <input type="text"
-              value="${ex.restHint || ''}"
-              onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'restHint', this.value)"
-              placeholder="e.g. CNS-heavy — don't rush">
-          </div>
-
-          <!-- Progression note -->
-          <div class="ec-field ec-prog">
-            <label>Progression Note</label>
-            <input type="text"
-              value="${ex.prog || ''}"
-              onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'prog', this.value)"
-              placeholder="e.g. Add 2.5kg when all sets hit top reps">
-          </div>
-
+    ${day.sections.map((sec, si) => `
+      <div class="edit-section-group" style="margin-bottom: 24px;">
+        <div class="ec-row" style="margin-top:20px; margin-bottom:10px; background:var(--surface2); padding:8px 12px; border-radius:var(--radius-sm); border: 1px solid var(--border2);">
+          <input type="text" class="ec-name-input" style="font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color: var(--text2);"
+            value="${sec.label || ''}"
+            onchange="updateSectionField(${editorActiveDay}, ${si}, 'label', this.value)"
+            placeholder="SECTION NAME (e.g. CHEST)">
+          <button class="ec-remove" onclick="removeSection(${editorActiveDay}, ${si})">✕</button>
         </div>
-      `).join('')
-    ).join('')}
+
+        ${sec.exercises.map((ex, ei) => `
+          <div class="edit-card">
+            <!-- Exercise name + remove -->
+            <div class="ec-row">
+              <input type="text" class="ec-name-input"
+                value="${ex.name}"
+                onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'name', this.value)"
+                placeholder="Exercise name">
+              <button class="ec-remove" onclick="removeExercise(${editorActiveDay}, ${si}, ${ei})">✕</button>
+            </div>
+
+            <!-- Subtitle / Note -->
+            <div class="ec-field">
+              <label>Subtitle / Note</label>
+              <input type="text"
+                value="${ex.note || ''}"
+                onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'note', this.value)"
+                placeholder="e.g. Main strength lift — go heavy">
+            </div>
+
+            <!-- Sets / RPE / Rest -->
+            <div class="ec-grid">
+              <div class="ec-field">
+                <label>Sets</label>
+                <input type="text"
+                  value="${ex.sets}"
+                  onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'sets', this.value)"
+                  placeholder="e.g. 4 × 6">
+              </div>
+              <div class="ec-field">
+                <label>RPE</label>
+                <input type="text"
+                  value="${ex.rpe || ''}"
+                  onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'rpe', this.value)"
+                  placeholder="e.g. RPE 8">
+              </div>
+              <div class="ec-field">
+                <label>Rest (s)</label>
+                <input type="number"
+                  value="${ex.restSec}"
+                  onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'restSec', this.value)">
+              </div>
+            </div>
+
+            <!-- Rest Hint -->
+            <div class="ec-field">
+              <label>Rest Hint</label>
+              <input type="text"
+                value="${ex.restHint || ''}"
+                onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'restHint', this.value)"
+                placeholder="e.g. CNS-heavy — don't rush">
+            </div>
+
+            <!-- Progression note -->
+            <div class="ec-field ec-prog">
+              <label>Progression Note</label>
+              <input type="text"
+                value="${ex.prog || ''}"
+                onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'prog', this.value)"
+                placeholder="e.g. Add 2.5kg when all sets hit top reps">
+            </div>
+          </div>
+        `).join('')}
+        
+        <button class="btn-outline btn-sm" style="width:100%; margin-top:8px; border-style: dashed; opacity: 0.7;" onclick="addExercise(${editorActiveDay}, ${si})">+ Add Exercise to ${sec.label || 'Section'}</button>
+      </div>
+    `).join('')}
   `;
 }
 
@@ -753,6 +763,10 @@ function updateDayBadges(di, val) {
   userProgram.days[di].badges = val.split(',').map(s => s.trim()).filter(s => s !== '');
 }
 
+function updateSectionField(di, si, field, val) {
+  userProgram.days[di].sections[si][field] = val;
+}
+
 function updateExField(di, si, ei, field, val) {
   if (field === 'restSec') val = parseInt(val) || 60;
   userProgram.days[di].sections[si].exercises[ei][field] = val;
@@ -761,7 +775,19 @@ function updateExField(di, si, ei, field, val) {
   }
 }
 
-function addExercise(di) {
+function addSection(di) {
+  if (!userProgram.days[di].sections) userProgram.days[di].sections = [];
+  userProgram.days[di].sections.push({ label: 'NEW SECTION', exercises: [] });
+  renderEditor();
+}
+
+function removeSection(di, si) {
+  if (!confirm("Remove this entire section and its exercises?")) return;
+  userProgram.days[di].sections.splice(si, 1);
+  renderEditor();
+}
+
+function addExercise(di, si) {
   const newEx = {
     id: 'ex-' + Date.now(),
     name: 'New Exercise',
@@ -774,16 +800,12 @@ function addExercise(di) {
     restHint: '',
     prog: ''
   };
-  if (!userProgram.days[di].sections || userProgram.days[di].sections.length === 0) {
+  if (!userProgram.days[di].sections) {
     userProgram.days[di].sections = [{ label: 'Exercises', exercises: [] }];
+    si = 0;
   }
-  userProgram.days[di].sections[0].exercises.push(newEx);
+  userProgram.days[di].sections[si].exercises.push(newEx);
   renderEditor();
-  // Scroll to the new card
-  setTimeout(() => {
-    const body = document.querySelector('.modal-body');
-    if (body) body.scrollTop = body.scrollHeight;
-  }, 60);
 }
 
 function removeExercise(di, si, ei) {
