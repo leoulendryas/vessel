@@ -275,7 +275,9 @@ function renderChartSection() {
           ${exOptions.map(ex => `<option value="${ex.id}">${ex.name}</option>`).join('')}
         </select>
       </div>
-      <canvas id="progChart"></canvas>
+      <div class="chart-container">
+        <canvas id="progChart"></canvas>
+      </div>
     </div>
   `;
 

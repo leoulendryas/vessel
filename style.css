@@ -460,7 +460,7 @@ nav {
   border-radius: var(--radius);
   padding: 20px;
 }
-#progChart { height: 320px; width: 100%; }
+.chart-container { position: relative; height: 280px; width: 100%; }
 .chart-controls { margin-bottom: 20px; }
 select {
   background: var(--surface2);
@@ -1036,7 +1036,7 @@ select {
   .sc-val     { font-size: 20px; }
   .sc-label   { font-size: 10px; }
   .chart-card, .pr-card, .volume-card, .recent-card { padding: 14px; }
-  #progChart { height: 200px !important; }
+  .chart-container { height: 180px; }
   .chart-controls select { width: 100%; min-width: unset; }
   .page-title { font-size: 20px; }
   .tip-box { font-size: 12px; padding: 10px 12px; }
