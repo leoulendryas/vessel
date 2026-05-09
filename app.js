@@ -649,6 +649,17 @@ function renderEditor() {
       <input type="text" class="edit-input" value="${day.title}"
         onchange="updateDayField(${editorActiveDay}, 'title', this.value)">
     </div>
+    <div class="edit-group">
+      <label>Badges (comma separated)</label>
+      <input type="text" class="edit-input" value="${(day.badges || []).join(', ')}"
+        onchange="updateDayBadges(${editorActiveDay}, this.value)"
+        placeholder="e.g. Push day, Heavy">
+    </div>
+    <div class="edit-group">
+      <label>Day Tip</label>
+      <textarea class="edit-input" style="height: 60px; resize: vertical;"
+        onchange="updateDayField(${editorActiveDay}, 'tip', this.value)">${day.tip || ''}</textarea>
+    </div>
 
     <!-- Exercises -->
     <div class="editor-ex-header">
@@ -667,6 +678,15 @@ function renderEditor() {
               onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'name', this.value)"
               placeholder="Exercise name">
             <button class="ec-remove" onclick="removeExercise(${editorActiveDay}, ${si}, ${ei})">✕</button>
+          </div>
+
+          <!-- Subtitle / Note -->
+          <div class="ec-field">
+            <label>Subtitle / Note</label>
+            <input type="text"
+              value="${ex.note || ''}"
+              onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'note', this.value)"
+              placeholder="e.g. Main strength lift — go heavy">
           </div>
 
           <!-- Sets / RPE / Rest -->
@@ -691,6 +711,15 @@ function renderEditor() {
                 value="${ex.restSec}"
                 onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'restSec', this.value)">
             </div>
+          </div>
+
+          <!-- Rest Hint -->
+          <div class="ec-field">
+            <label>Rest Hint</label>
+            <input type="text"
+              value="${ex.restHint || ''}"
+              onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'restHint', this.value)"
+              placeholder="e.g. CNS-heavy — don't rush">
           </div>
 
           <!-- Progression note -->
@@ -720,6 +749,10 @@ function updateDayField(di, field, val) {
   userProgram.days[di][field] = val;
 }
 
+function updateDayBadges(di, val) {
+  userProgram.days[di].badges = val.split(',').map(s => s.trim()).filter(s => s !== '');
+}
+
 function updateExField(di, si, ei, field, val) {
   if (field === 'restSec') val = parseInt(val) || 60;
   userProgram.days[di].sections[si].exercises[ei][field] = val;
@@ -732,11 +765,13 @@ function addExercise(di) {
   const newEx = {
     id: 'ex-' + Date.now(),
     name: 'New Exercise',
+    note: '',
     sets: '3 × 10',
     numSets: 3,
     rpe: 'RPE 7',
     rest: '60s',
     restSec: 60,
+    restHint: '',
     prog: ''
   };
   if (!userProgram.days[di].sections || userProgram.days[di].sections.length === 0) {
