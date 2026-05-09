@@ -243,11 +243,16 @@ function renderExDetail(ex) {
   return `
     <div class="detail-grid">
       <div class="detail-card">
+        <div class="dc-label">Target Intensity</div>
+        <div class="dc-val">${ex.rpe || 'RPE 7-8'}</div>
+        <div class="dc-hint">Effort level for your working sets.</div>
+      </div>
+      <div class="detail-card">
         <div class="dc-label">Rest between sets</div>
         <div class="dc-val">${ex.rest}</div>
         <div class="dc-hint">${ex.restHint || 'Set timer starts automatically when you finish a set.'}</div>
       </div>
-      <div class="detail-card">
+      <div class="detail-card" style="grid-column: 1/-1">
         <div class="dc-label">How to progress</div>
         <div class="dc-val">${ex.prog || 'Add weight or reps when possible.'}</div>
       </div>

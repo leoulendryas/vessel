@@ -927,7 +927,6 @@ select {
   .ex-name   { font-size: 13px; }
   .ex-note   { font-size: 11px; }
   .ex-meta   { gap: 5px; }
-  .ex-meta .pill:not(.pill-sets) { display: none; }
   .pill { font-size: 10px; padding: 3px 8px; }
 
   /* Set bubbles */
