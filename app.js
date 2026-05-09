@@ -1,30 +1,25 @@
 /**
  * app.js - vessel Workout Page Logic
  */
-
 let sb = null;
 let activeDay = 0;
 let openExId = null;
 let completedSets = {}; // { [exId]: Set<number> }
 let timer = { running: false, exId: null, seconds: 0, total: 0, interval: null };
-let authMode = 'login'; // or 'signup'
+let authMode = 'login';
 let userProgram = null;
 
 // --- INITIALIZATION ---
-
 document.addEventListener('DOMContentLoaded', async () => {
   initSupabase();
   buildFloatTimer();
-  
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed', err));
-    
-    // Reload page when new service worker takes over
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       window.location.reload();
     });
   }
-
   if (sb) {
     const { data: { user } } = await sb.auth.getUser();
     if (!user) {
@@ -33,12 +28,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       await showApp(user);
     }
   } else {
-    // If no SB, fallback to static app
     userProgram = PROGRAM;
     renderTabs();
     renderDay();
   }
-
   setupAuthListeners();
 });
 
@@ -54,13 +47,12 @@ function initSupabase() {
 }
 
 // --- AUTH LOGIC ---
-
 function setupAuthListeners() {
   const passInput = document.getElementById('auth-pass');
   const emoji = document.getElementById('pass-emoji');
   const msg = document.getElementById('pass-msg');
   if (!passInput || !emoji || !msg) return;
-  
+
   passInput.addEventListener('input', (e) => {
     const len = e.target.value.length;
     if (len < 2) {
@@ -80,7 +72,6 @@ function setupAuthListeners() {
       msg.innerText = 'Bro, it\'s just a gym app. Relax. 😂';
     }
   });
-
   document.getElementById('auth-form').addEventListener('submit', handleAuthSubmit);
 }
 
@@ -89,7 +80,6 @@ function toggleAuthMode() {
   const sub = document.getElementById('auth-sub');
   const btn = document.getElementById('auth-submit-btn');
   const switchText = document.getElementById('auth-switch-text');
-
   if (authMode === 'signup') {
     sub.innerText = "Join the vessel community.";
     btn.innerText = "Create Account";
@@ -106,10 +96,8 @@ async function handleAuthSubmit(e) {
   const email = document.getElementById('auth-email').value;
   const password = document.getElementById('auth-pass').value;
   const btn = document.getElementById('auth-submit-btn');
-
   btn.disabled = true;
   btn.innerText = authMode === 'login' ? "Entering..." : "Creating...";
-
   try {
     let result;
     if (authMode === 'login') {
@@ -117,9 +105,7 @@ async function handleAuthSubmit(e) {
     } else {
       result = await sb.auth.signUp({ email, password });
     }
-
     if (result.error) throw result.error;
-
     if (authMode === 'signup' && !result.data.session) {
       showToast("Check your email for a confirmation link! 📧", "success");
       btn.innerText = "Check your email!";
@@ -154,7 +140,6 @@ async function showApp(user) {
   document.getElementById('auth-overlay').classList.add('hidden');
   document.getElementById('user-bar').classList.remove('hidden');
   document.getElementById('user-email').innerText = user.email;
-
   await loadUserProgram();
   renderTabs();
   renderDay();
@@ -163,16 +148,13 @@ async function showApp(user) {
 async function loadUserProgram() {
   try {
     const { data, error } = await sb.from('user_programs').select('program_data').maybeSingle();
-    
     if (error) throw error;
-
     if (!data) {
       userProgram = JSON.parse(JSON.stringify(PROGRAM));
       const { error: insError } = await sb.from('user_programs').insert({ program_data: userProgram });
       if (insError) console.error("Initial save failed", insError);
     } else {
       userProgram = data.program_data;
-      // Migration: Ensure Sat/Sun exist for older 5-day accounts
       if (userProgram.days.length < 7) {
         const weekend = PROGRAM.days.slice(5);
         userProgram.days.push(...JSON.parse(JSON.stringify(weekend)));
@@ -190,7 +172,6 @@ async function handleLogout() {
 }
 
 // --- RENDERING ---
-
 function renderTabs() {
   const container = document.getElementById('day-tabs');
   const prog = userProgram || PROGRAM;
@@ -214,14 +195,12 @@ function renderDay() {
   const prog = userProgram || PROGRAM;
   const day = prog.days[activeDay];
   const panel = document.getElementById('panel');
-
   let html = `
     <div class="day-title">${day.title}</div>
     <div class="badge-row">
       ${(day.badges || []).map(b => `<div class="badge">${b}</div>`).join('')}
     </div>
   `;
-
   day.sections.forEach(sec => {
     if (sec.label) html += `<div class="sec-label">${sec.label}</div>`;
     sec.exercises.forEach(ex => {
@@ -246,7 +225,6 @@ function renderDay() {
       `;
     });
   });
-
   if (day.tip) {
     html += `
       <div class="tip-box">
@@ -254,9 +232,7 @@ function renderDay() {
       </div>
     `;
   }
-
   panel.innerHTML = html;
-
   if (openExId) {
     const ex = findEx(openExId);
     if (ex) loadAndRenderLogs(ex);
@@ -276,7 +252,6 @@ function renderExDetail(ex) {
         <div class="dc-val">${ex.prog || 'Add weight or reps when possible.'}</div>
       </div>
     </div>
-
     <div class="set-tracker">
       <div class="st-label">Set Tracker</div>
       <div class="set-bubbles" id="bubbles-${ex.id}">
@@ -286,7 +261,6 @@ function renderExDetail(ex) {
         ${renderProgressText(ex)}
       </div>
     </div>
-
     <div class="rest-timer" id="timer-${ex.id}">
       <div class="rt-top">
         <div class="rt-label">⏱ Rest timer</div>
@@ -300,7 +274,6 @@ function renderExDetail(ex) {
         <div class="rt-progress-fill" id="fill-${ex.id}"></div>
       </div>
     </div>
-
     <div class="weight-log">
       <div class="wl-title">Log this session</div>
       <form class="wl-form" onsubmit="handleLogSubmit(event, '${ex.id}', '${ex.name}')">
@@ -314,7 +287,6 @@ function renderExDetail(ex) {
         </div>
         <button type="submit" class="wl-submit" id="btn-${ex.id}">Save</button>
       </form>
-      
       <div class="wl-history-label">Previous logs</div>
       <div class="wl-history" id="history-${ex.id}">
         <div class="empty-state">Loading history...</div>
@@ -324,15 +296,9 @@ function renderExDetail(ex) {
 }
 
 // --- EXERCISE INTERACTIONS ---
-
 function toggleEx(exId) {
-  if (openExId === exId) {
-    openExId = null;
-  } else {
-    openExId = exId;
-  }
+  openExId = (openExId === exId) ? null : exId;
   renderDay();
-  
   if (openExId) {
     setTimeout(() => {
       const el = document.getElementById(`ex-${exId}`);
@@ -353,19 +319,16 @@ function findEx(id) {
 }
 
 // --- SET TRACKER ---
-
 function renderBubbles(ex) {
   const doneSet = completedSets[ex.id] || new Set();
   let firstUndone = -1;
   let html = '';
   const numSets = parseInt(ex.numSets) || parseInt(ex.sets.split('×')[0]) || 3;
-
   for (let i = 1; i <= numSets; i++) {
     const isDone = doneSet.has(i);
     if (!isDone && firstUndone === -1) firstUndone = i;
-    
     html += `
-      <div class="set-bubble ${isDone ? 'done' : ''} ${firstUndone === i ? 'active-set' : ''}" 
+      <div class="set-bubble ${isDone ? 'done' : ''} ${firstUndone === i ? 'active-set' : ''}"
            onclick="toggleSet('${ex.id}', ${i}, ${ex.restSec})">
         ${isDone ? '✓' : i}
       </div>
@@ -386,7 +349,6 @@ function renderProgressText(ex) {
 function toggleSet(exId, setNum, restSec) {
   if (!completedSets[exId]) completedSets[exId] = new Set();
   const doneSet = completedSets[exId];
-
   if (doneSet.has(setNum)) {
     for (let i = setNum; i <= 20; i++) doneSet.delete(i);
     stopTimer(true);
@@ -394,7 +356,6 @@ function toggleSet(exId, setNum, restSec) {
     doneSet.add(setNum);
     startTimer(exId, restSec);
   }
-
   const ex = findEx(exId);
   const bubbleCont = document.getElementById(`bubbles-${exId}`);
   const progCont = document.getElementById(`progress-text-${exId}`);
@@ -403,34 +364,21 @@ function toggleSet(exId, setNum, restSec) {
 }
 
 // --- TIMER LOGIC ---
-
 function startTimer(exId, total) {
   stopTimer(false);
-  
   timer.running = true;
   timer.exId = exId;
   timer.seconds = total;
   timer.total = total;
-
   const timerEl = document.getElementById(`timer-${exId}`);
   if (timerEl) timerEl.classList.add('visible');
-  
   const floatEl = document.getElementById('float-timer');
-  if (floatEl) {
-    floatEl.classList.remove('done');
-    floatEl.classList.add('show');
-  }
-
+  if (floatEl) { floatEl.classList.remove('done'); floatEl.classList.add('show'); }
   updateTimerUI();
-
   timer.interval = setInterval(() => {
     timer.seconds--;
     updateTimerUI();
-
-    if (timer.seconds <= 0) {
-      clearInterval(timer.interval);
-      handleTimerEnd();
-    }
+    if (timer.seconds <= 0) { clearInterval(timer.interval); handleTimerEnd(); }
   }, 1000);
 }
 
@@ -438,12 +386,10 @@ function updateTimerUI() {
   const { seconds, total, exId } = timer;
   const formatted = formatTime(seconds);
   const percent = total > 0 ? ((total - seconds) / total) * 100 : 0;
-
   const countEl = document.getElementById(`count-${exId}`);
   const fillEl = document.getElementById(`fill-${exId}`);
   if (countEl) countEl.innerText = formatted;
   if (fillEl) fillEl.style.width = `${percent}%`;
-
   const ftTime = document.getElementById('ft-time');
   const ftFill = document.getElementById('ft-fill');
   if (ftTime) ftTime.innerText = formatted;
@@ -461,16 +407,11 @@ let ringingInterval = null;
 let alarmAudio = null;
 
 function playBell() {
-  stopRinging(); // Ensure no double ringing
-  
-  // 1. Try playing real alarm.mp3 if user provided it
+  stopRinging();
   alarmAudio = new Audio('alarm.mp3');
   alarmAudio.loop = true;
-  
   alarmAudio.play().catch(() => {
-    // 2. Fallback to synthesized ringing if alarm.mp3 fails or doesn't exist
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    
     const ring = () => {
       if (ctx.state === 'suspended') ctx.resume();
       [261.63, 329.63, 392.00, 523.25].forEach((freq, i) => {
@@ -488,45 +429,30 @@ function playBell() {
         osc.stop(t + 1.2);
       });
     };
-
     ring();
-    ringingInterval = setInterval(ring, 2000); 
+    ringingInterval = setInterval(ring, 2000);
   });
 }
 
 function stopRinging() {
-  if (alarmAudio) {
-    alarmAudio.pause();
-    alarmAudio.currentTime = 0;
-    alarmAudio = null;
-  }
-  if (ringingInterval) {
-    clearInterval(ringingInterval);
-    ringingInterval = null;
-  }
+  if (alarmAudio) { alarmAudio.pause(); alarmAudio.currentTime = 0; alarmAudio = null; }
+  if (ringingInterval) { clearInterval(ringingInterval); ringingInterval = null; }
 }
 
 function handleTimerEnd() {
   playBell();
-  
   const { exId } = timer;
   const timerEl = document.getElementById(`timer-${exId}`);
   const floatEl = document.getElementById('float-timer');
-  
   if (timerEl) {
     timerEl.classList.add('done');
     const countEl = document.getElementById(`count-${exId}`);
     if (countEl) countEl.innerText = "TIME'S UP! 🔔";
-    
-    // Change Skip to Stop Alarm
     const btns = timerEl.querySelector('.rt-btns');
     if (btns) {
-      btns.innerHTML = `
-        <button class="rt-btn btn-danger" style="background:var(--accent); color:var(--accent-text); border:none;" onclick="finalizeTimer()">STOP ALARM</button>
-      `;
+      btns.innerHTML = `<button class="rt-btn btn-danger" style="background:var(--accent); color:var(--accent-text); border:none;" onclick="finalizeTimer()">STOP ALARM</button>`;
     }
   }
-  
   if (floatEl) {
     floatEl.classList.add('done');
     const ftTime = document.getElementById('ft-time');
@@ -538,14 +464,11 @@ function handleTimerEnd() {
 
 function finalizeTimer() {
   stopRinging();
-  
   const { exId } = timer;
   const timerEl = document.getElementById(`timer-${exId}`);
   const floatEl = document.getElementById('float-timer');
-
   if (timerEl) {
     document.getElementById(`count-${exId}`).innerText = "Go! 🔥";
-    // Restore buttons
     const ex = findEx(exId);
     const btns = timerEl.querySelector('.rt-btns');
     if (btns) {
@@ -555,12 +478,10 @@ function finalizeTimer() {
       `;
     }
   }
-
   if (floatEl) {
     document.getElementById('ft-time').innerText = "Go! 🔥";
     floatEl.querySelector('button').innerText = "Skip";
     floatEl.querySelector('button').onclick = () => stopTimer(true);
-    
     setTimeout(() => {
       if (!timer.running && !ringingInterval) floatEl.classList.remove('show');
     }, 5000);
@@ -570,24 +491,16 @@ function finalizeTimer() {
 function stopTimer(hideFloat) {
   clearInterval(timer.interval);
   timer.running = false;
-  
   const oldExId = timer.exId;
   if (oldExId) {
     const timerEl = document.getElementById(`timer-${oldExId}`);
-    if (timerEl) {
-      timerEl.classList.remove('visible', 'done');
-    }
+    if (timerEl) timerEl.classList.remove('visible', 'done');
   }
-
   const floatEl = document.getElementById('float-timer');
-  if (hideFloat && floatEl) {
-    floatEl.classList.remove('show');
-  }
+  if (hideFloat && floatEl) floatEl.classList.remove('show');
 }
 
-function resetTimer(exId, total) {
-  startTimer(exId, total);
-}
+function resetTimer(exId, total) { startTimer(exId, total); }
 
 function buildFloatTimer() {
   const el = document.createElement('div');
@@ -596,42 +509,30 @@ function buildFloatTimer() {
   el.innerHTML = `
     <div class="ft-label">Resting</div>
     <div class="ft-time" id="ft-time">0:00</div>
-    <div class="ft-progress-bg">
-      <div class="ft-progress-fill" id="ft-fill"></div>
-    </div>
+    <div class="ft-progress-bg"><div class="ft-progress-fill" id="ft-fill"></div></div>
     <button class="rt-btn" onclick="stopTimer(true)">Skip</button>
   `;
   document.body.appendChild(el);
 }
 
 // --- WEIGHT LOGGING ---
-
 async function handleLogSubmit(e, exId, exName) {
   e.preventDefault();
   const btn = document.getElementById(`btn-${exId}`);
   const weightInput = document.getElementById(`log-w-${exId}`);
   const repsInput = document.getElementById(`log-r-${exId}`);
-  
   const weight = parseFloat(weightInput.value);
   const reps = parseInt(repsInput.value);
-
-  if (!weight || weight <= 0) {
-    showToast("Please enter a valid weight", "error");
-    return;
-  }
-
+  if (!weight || weight <= 0) { showToast("Please enter a valid weight", "error"); return; }
   btn.disabled = true;
   btn.innerText = "Saving...";
-
   const newLog = {
     exercise_id: exId,
     exercise_name: exName,
     day_id: (userProgram || PROGRAM).days[activeDay].id,
-    weight,
-    reps,
+    weight, reps,
     date: new Date().toISOString().split('T')[0]
   };
-
   try {
     if (sb) {
       const { error } = await sb.from('logs').insert([newLog]);
@@ -641,7 +542,6 @@ async function handleLogSubmit(e, exId, exName) {
       logs.unshift({ ...newLog, id: Date.now().toString(), created_at: new Date().toISOString() });
       localStorage.setItem('gymLogs', JSON.stringify(logs));
     }
-
     showToast("Logged! 💪", "success");
     weightInput.value = "";
     repsInput.value = "";
@@ -659,7 +559,6 @@ async function loadAndRenderLogs(ex) {
   const container = document.getElementById(`history-${ex.id}`);
   if (!container) return;
   let logs = [];
-
   try {
     if (sb) {
       const { data, error } = await sb.from('logs')
@@ -674,12 +573,10 @@ async function loadAndRenderLogs(ex) {
       const allLogs = JSON.parse(localStorage.getItem('gymLogs') || '[]');
       logs = allLogs.filter(l => l.exercise_id === ex.id).slice(0, 8);
     }
-
     if (logs.length === 0) {
       container.innerHTML = '<div class="empty-state">No logs yet. Finish a set and save!</div>';
       return;
     }
-
     container.innerHTML = logs.map((log, i) => {
       const nextLog = logs[i + 1];
       let diffHtml = '';
@@ -689,7 +586,6 @@ async function loadAndRenderLogs(ex) {
         const sign = diff > 0 ? '+' : '';
         diffHtml = `<span class="wl-diff ${diffClass}">${sign}${diff}kg</span>`;
       }
-
       return `
         <div class="wl-entry">
           <div class="wl-date">${formatDate(log.date)}</div>
@@ -700,18 +596,16 @@ async function loadAndRenderLogs(ex) {
         </div>
       `;
     }).join('');
-
   } catch (err) {
     container.innerHTML = '<div class="empty-state">Error loading logs</div>';
   }
 }
 
 // --- PROGRAM EDITOR ---
-
 let editorActiveDay = 0;
 
 function openProgramEditor() {
-  editorActiveDay = activeDay; // Start on currently viewed day
+  editorActiveDay = activeDay;
   document.getElementById('editor-overlay').classList.remove('hidden');
   renderEditor();
 }
@@ -725,7 +619,8 @@ function renderEditor() {
   const prog = userProgram || PROGRAM;
   const day = prog.days[editorActiveDay];
 
-  let html = `
+  container.innerHTML = `
+    <!-- Day selector tabs -->
     <div class="editor-tabs">
       ${prog.days.map((d, i) => `
         <div class="editor-tab ${editorActiveDay === i ? 'active' : ''}" onclick="switchEditorDay(${i})">
@@ -734,62 +629,82 @@ function renderEditor() {
       `).join('')}
     </div>
 
-    <div class="edit-day-section">
-      <div class="edit-group">
-        <label>Split Name</label>
-        <input type="text" class="edit-input" value="${day.tabName}" onchange="updateDayField(${editorActiveDay}, 'tabName', this.value)">
-      </div>
-      <div class="edit-group">
-        <label>Full Title</label>
-        <input type="text" class="edit-input" value="${day.title}" onchange="updateDayField(${editorActiveDay}, 'title', this.value)">
-      </div>
-      
-      <div class="editor-ex-list">
-        <div class="editor-ex-header">
-          <div class="syne" style="font-size:14px;">Exercises</div>
-          <button class="wl-submit btn-sm" onclick="addExercise(${editorActiveDay})">+ Add</button>
-        </div>
-
-        ${day.sections.map((sec, si) => 
-          sec.exercises.map((ex, ei) => `
-            <div class="edit-card">
-              <div class="ec-row">
-                <input type="text" class="ec-name-input" value="${ex.name}" onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'name', this.value)" placeholder="Exercise Name">
-                <button class="ec-remove" onclick="removeExercise(${editorActiveDay}, ${si}, ${ei})">✕</button>
-              </div>
-              
-              <div class="ec-grid">
-                <div class="ec-field">
-                  <label>Sets</label>
-                  <input type="text" value="${ex.sets}" onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'sets', this.value)">
-                </div>
-                <div class="ec-field">
-                  <label>RPE</label>
-                  <input type="text" value="${ex.rpe || ''}" onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'rpe', this.value)">
-                </div>
-                <div class="ec-field">
-                  <label>Rest (s)</label>
-                  <input type="number" value="${ex.restSec}" onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'restSec', this.value)">
-                </div>
-              </div>
-
-              <div class="ec-field" style="margin-top:10px;">
-                <label>Progression Note</label>
-                <input type="text" value="${ex.prog || ''}" onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'prog', this.value)" placeholder="e.g. Add 2.5kg when all sets hit">
-              </div>
-            </div>
-          `).join('')
-        ).join('')}
-      </div>
+    <!-- Day meta fields -->
+    <div class="edit-group">
+      <label>Split Name</label>
+      <input type="text" class="edit-input" value="${day.tabName}"
+        onchange="updateDayField(${editorActiveDay}, 'tabName', this.value)">
     </div>
-  `;
+    <div class="edit-group">
+      <label>Full Title</label>
+      <input type="text" class="edit-input" value="${day.title}"
+        onchange="updateDayField(${editorActiveDay}, 'title', this.value)">
+    </div>
 
-  container.innerHTML = html;
+    <!-- Exercises -->
+    <div class="editor-ex-header">
+      <div class="syne" style="font-size:14px; font-weight:800;">Exercises</div>
+      <button class="wl-submit btn-sm" onclick="addExercise(${editorActiveDay})">+ Add</button>
+    </div>
+
+    ${day.sections.map((sec, si) =>
+      sec.exercises.map((ex, ei) => `
+        <div class="edit-card">
+
+          <!-- Exercise name + remove -->
+          <div class="ec-row">
+            <input type="text" class="ec-name-input"
+              value="${ex.name}"
+              onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'name', this.value)"
+              placeholder="Exercise name">
+            <button class="ec-remove" onclick="removeExercise(${editorActiveDay}, ${si}, ${ei})">✕</button>
+          </div>
+
+          <!-- Sets / RPE / Rest -->
+          <div class="ec-grid">
+            <div class="ec-field">
+              <label>Sets</label>
+              <input type="text"
+                value="${ex.sets}"
+                onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'sets', this.value)"
+                placeholder="e.g. 4 × 6">
+            </div>
+            <div class="ec-field">
+              <label>RPE</label>
+              <input type="text"
+                value="${ex.rpe || ''}"
+                onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'rpe', this.value)"
+                placeholder="e.g. RPE 8">
+            </div>
+            <div class="ec-field">
+              <label>Rest (s)</label>
+              <input type="number"
+                value="${ex.restSec}"
+                onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'restSec', this.value)">
+            </div>
+          </div>
+
+          <!-- Progression note -->
+          <div class="ec-field ec-prog">
+            <label>Progression Note</label>
+            <input type="text"
+              value="${ex.prog || ''}"
+              onchange="updateExField(${editorActiveDay}, ${si}, ${ei}, 'prog', this.value)"
+              placeholder="e.g. Add 2.5kg when all sets hit top reps">
+          </div>
+
+        </div>
+      `).join('')
+    ).join('')}
+  `;
 }
 
 function switchEditorDay(idx) {
   editorActiveDay = idx;
   renderEditor();
+  // Scroll modal body back to top when switching days
+  const body = document.getElementById('editor-body');
+  if (body) body.parentElement.scrollTop = 0;
 }
 
 function updateDayField(di, field, val) {
@@ -820,6 +735,11 @@ function addExercise(di) {
   }
   userProgram.days[di].sections[0].exercises.push(newEx);
   renderEditor();
+  // Scroll to the new card
+  setTimeout(() => {
+    const body = document.querySelector('.modal-body');
+    if (body) body.scrollTop = body.scrollHeight;
+  }, 60);
 }
 
 function removeExercise(di, si, ei) {
@@ -831,14 +751,11 @@ async function saveProgram() {
   const btn = document.querySelector('.modal-footer .wl-submit');
   btn.disabled = true;
   btn.innerText = "Saving...";
-
   try {
     const { error } = await sb.from('user_programs')
       .update({ program_data: userProgram })
       .eq('user_id', (await sb.auth.getUser()).data.user.id);
-    
     if (error) throw error;
-    
     showToast("Program updated! 🔥", "success");
     closeProgramEditor();
     renderTabs();
@@ -853,7 +770,6 @@ async function saveProgram() {
 }
 
 // --- HELPERS ---
-
 function formatDate(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -865,26 +781,4 @@ function showToast(msg, type) {
   t.innerText = msg;
   t.className = `toast show ${type}`;
   setTimeout(() => t.classList.remove('show'), 2800);
-}
-
-function playBell() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [261.63, 329.63, 392.00, 523.25].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const t = ctx.currentTime + i * 0.09;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.15, t + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-      osc.start(t);
-      osc.stop(t + 1.2);
-    });
-  } catch (e) {
-    console.warn("Audio blocked");
-  }
 }
