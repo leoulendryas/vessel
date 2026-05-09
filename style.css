@@ -460,6 +460,7 @@ nav {
   border-radius: var(--radius);
   padding: 20px;
 }
+#progChart { height: 320px; width: 100%; }
 .chart-controls { margin-bottom: 20px; }
 select {
   background: var(--surface2);

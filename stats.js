@@ -297,10 +297,12 @@ function updateChart(exId) {
 
   const sortedDates = Object.keys(grouped).sort();
   
-  // Mobile optimization: show only last 8 data points if on small screen
+  // Data optimization to keep graph readable
   let finalDates = sortedDates;
-  if (window.innerWidth < 520 && sortedDates.length > 8) {
-    finalDates = sortedDates.slice(-8);
+  if (window.innerWidth < 520) {
+    if (sortedDates.length > 8) finalDates = sortedDates.slice(-8);
+  } else {
+    if (sortedDates.length > 24) finalDates = sortedDates.slice(-24);
   }
 
   const data = finalDates.map(d => grouped[d]);
