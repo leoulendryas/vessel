@@ -458,34 +458,48 @@ function formatTime(s) {
 }
 
 let ringingInterval = null;
+let alarmAudio = null;
 
 function playBell() {
   stopRinging(); // Ensure no double ringing
   
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  // 1. Try playing real alarm.mp3 if user provided it
+  alarmAudio = new Audio('alarm.mp3');
+  alarmAudio.loop = true;
   
-  const ring = () => {
-    [261.63, 329.63, 392.00, 523.25].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const t = ctx.currentTime + i * 0.09;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.15, t + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-      osc.start(t);
-      osc.stop(t + 1.2);
-    });
-  };
+  alarmAudio.play().catch(() => {
+    // 2. Fallback to synthesized ringing if alarm.mp3 fails or doesn't exist
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    const ring = () => {
+      if (ctx.state === 'suspended') ctx.resume();
+      [261.63, 329.63, 392.00, 523.25].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const t = ctx.currentTime + i * 0.09;
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.15, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+        osc.start(t);
+        osc.stop(t + 1.2);
+      });
+    };
 
-  ring();
-  ringingInterval = setInterval(ring, 2000); // Ring every 2 seconds
+    ring();
+    ringingInterval = setInterval(ring, 2000); 
+  });
 }
 
 function stopRinging() {
+  if (alarmAudio) {
+    alarmAudio.pause();
+    alarmAudio.currentTime = 0;
+    alarmAudio = null;
+  }
   if (ringingInterval) {
     clearInterval(ringingInterval);
     ringingInterval = null;

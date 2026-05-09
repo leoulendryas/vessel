@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vessel-pwa-v9';
+const CACHE_NAME = 'vessel-pwa-v11';
 const ASSETS = [
   './',
   'index.html',
@@ -7,6 +7,7 @@ const ASSETS = [
   'app.js',
   'stats.js',
   'manifest.json',
+  'alarm.mp3',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'screenshots/mobile.png',
