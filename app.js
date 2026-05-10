@@ -664,7 +664,10 @@ function renderEditor() {
     <!-- Exercises -->
     <div class="editor-ex-header">
       <div class="syne" style="font-size:14px; font-weight:800;">Workout Structure</div>
-      <button class="wl-submit btn-sm" onclick="addSection(${editorActiveDay})">+ Add Section</button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);" onclick="clearEntireProgram()">Clear All</button>
+        <button class="wl-submit btn-sm" onclick="addSection(${editorActiveDay})">+ Add Section</button>
+      </div>
     </div>
 
     ${day.sections.map((sec, si) => `
@@ -784,6 +787,24 @@ function addSection(di) {
 function removeSection(di, si) {
   if (!confirm("Remove this entire section and its exercises?")) return;
   userProgram.days[di].sections.splice(si, 1);
+  renderEditor();
+}
+
+function clearEntireProgram() {
+  if (!confirm("Are you sure? This will wipe your ENTIRE 7-day program so you can start from scratch. This cannot be undone.")) return;
+  
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  userProgram.days = days.map((label, i) => ({
+    id: label.toLowerCase(),
+    label: label,
+    tabName: 'Rest',
+    title: label + ' Workout',
+    badges: ['Rest day'],
+    tip: '',
+    sections: []
+  }));
+  
+  editorActiveDay = 0;
   renderEditor();
 }
 
