@@ -664,7 +664,7 @@ function renderEditor() {
     <!-- Exercises -->
     <div class="editor-ex-header">
       <div class="syne" style="font-size:14px; font-weight:800;">Workout Structure</div>
-      <div style="display:flex; gap:8px;">
+      <div class="ee-btns">
         <button class="btn-outline btn-sm" style="color:var(--danger); border-color:var(--danger);" onclick="clearEntireProgram()">Clear All</button>
         <button class="wl-submit btn-sm" onclick="addSection(${editorActiveDay})">+ Add Section</button>
       </div>

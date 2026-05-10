@@ -761,6 +761,7 @@ select {
   margin-top: 24px;
   margin-bottom: 12px;
 }
+.ee-btns { display: flex; gap: 8px; }
 
 /* ════════════════════════════════
    EDITOR — EXERCISE CARDS
@@ -1026,7 +1027,15 @@ select {
   .edit-input { padding: 10px 12px; font-size: 16px; /* prevent iOS zoom */ }
 
   /* Exercise list header */
-  .editor-ex-header { margin-top: 20px; margin-bottom: 10px; }
+  .editor-ex-header { 
+    margin-top: 20px; 
+    margin-bottom: 10px; 
+    flex-direction: column; 
+    align-items: flex-start; 
+    gap: 12px; 
+  }
+  .ee-btns { width: 100%; }
+  .ee-btns button { flex: 1; }
 
   /* Exercise cards */
   .edit-card { padding: 12px; margin-bottom: 10px; }
