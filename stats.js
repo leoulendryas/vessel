@@ -141,14 +141,23 @@ async function showApp(user) {
   document.getElementById('user-bar').classList.remove('hidden');
   document.getElementById('user-email').innerText = user.email;
 
-  await loadUserProgram();
+  await loadUserProgram(user);
   await loadAllData();
 }
 
-async function loadUserProgram() {
+async function loadUserProgram(user) {
   try {
     const { data, error } = await sb.from('user_programs').select('program_data').maybeSingle();
-    if (!error && data) {
+    if (error) throw error;
+
+    // Special migration for specific user to the new Hammer Strength program
+    const isLeoul = user && user.email === 'leoulendryas@gmail.com';
+    const isOldProgram = data && data.program_data && data.program_data.days[0].sections[0].exercises[0].id === 'flat-barbell-bench';
+
+    if (isLeoul && isOldProgram) {
+      userProgram = JSON.parse(JSON.stringify(PROGRAM));
+      await sb.from('user_programs').update({ program_data: userProgram }).eq('user_id', user.id);
+    } else if (data) {
       userProgram = data.program_data;
       if (userProgram.days.length < 7) {
         userProgram.days.push(...JSON.parse(JSON.stringify(PROGRAM.days.slice(5))));
